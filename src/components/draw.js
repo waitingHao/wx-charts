@@ -469,8 +469,8 @@ export function drawPieDataPoints (series, opts, config, context, process = 1) {
     });
     series.forEach(function(eachSeries) {
         context.beginPath();
-        context.setLineWidth(2);
-        context.setStrokeStyle('#ffffff');
+        context.setLineWidth(opts.pieStrokeWidth || 2);
+        context.setStrokeStyle(opts.pieStrokeColor || '#ffffff');
         context.setFillStyle(eachSeries.color);
         context.moveTo(centerPosition.x, centerPosition.y);
         context.arc(centerPosition.x, centerPosition.y, radius, eachSeries._start_, eachSeries._start_ + 2 * eachSeries._proportion_ * Math.PI);

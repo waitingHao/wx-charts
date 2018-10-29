@@ -453,10 +453,14 @@ export function drawPieDataPoints (series, opts, config, context, process = 1) {
     let centerPosition = {
         x: opts.width / 2,
         y: (opts.height - config.legendHeight) / 2
-    }
+    };
+
+    opts.pieChartLinePadding = opts.pieChartLinePadding || config.pieChartLinePadding;
+    opts.pieChartTextPadding = opts.pieChartTextPadding || config.pieChartTextPadding;
+
     let radius = Math.min(
-        centerPosition.x - config.pieChartLinePadding - config.pieChartTextPadding - config._pieTextMaxLength_,
-        centerPosition.y - config.pieChartLinePadding - config.pieChartTextPadding
+        centerPosition.x - opts.pieChartLinePadding - opts.pieChartTextPadding - config._pieTextMaxLength_,
+        centerPosition.y - opts.pieChartLinePadding - opts.pieChartTextPadding
     );
     if (opts.dataLabel) {
         radius -= 10;

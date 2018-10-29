@@ -84,8 +84,8 @@ export function drawRadarLabel(angleList, radius, centerPosition, opts, config, 
 }
 
 export function drawPieText (series, opts, config, context, radius, center) {
-    let lineRadius = radius + config.pieChartLinePadding;
-    let textRadius = lineRadius + config.pieChartTextPadding;
+    let lineRadius = radius + opts.pieChartLinePadding;
+    let textRadius = lineRadius + opts.pieChartTextPadding;
     let textObjectCollection = [];
     let lastTextObject = null;
 
@@ -105,7 +105,7 @@ export function drawPieText (series, opts, config, context, radius, center) {
         let orginY2 = Math.sin(item.arc)  * radius;
         
         // text start
-        let orginX3 = orginX1 >= 0 ? orginX1 + config.pieChartTextPadding : orginX1 - config.pieChartTextPadding ;
+        let orginX3 = orginX1 >= 0 ? orginX1 + opts.pieChartTextPadding : orginX1 - opts.pieChartTextPadding ;
         let orginY3 = orginY1;
         
         let textWidth = measureText(item.text);
@@ -146,7 +146,7 @@ export function drawPieText (series, opts, config, context, radius, center) {
             height: config.fontSize,
             text: item.text,
             color: item.color
-        }
+        };
 
         lastTextObject = avoidCollision(textObject, lastTextObject);
         textObjectCollection.push(lastTextObject);

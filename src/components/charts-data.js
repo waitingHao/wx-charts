@@ -15,7 +15,7 @@ export function getSeriesDataItem(series, index) {
             let seriesItem = {};
             seriesItem.color = item.color;
             seriesItem.name = item.name;
-            seriesItem.data = item.format ? item.format(item.data[index]) : item.data[index];
+            seriesItem.data = item.format ? item.format(item.data[index], item) : item.data[index];
             data.push(seriesItem);
         }
     });
@@ -277,7 +277,7 @@ export function getPieTextMaxLength(series) {
     series = getPieDataPoints(series);
     let maxLength = 0;
     series.forEach((item) => {
-        let text = item.format ? item.format(+item._proportion_.toFixed(2)) : `${Util.toFixed(item._proportion_ * 100)}%`;
+        let text = item.format ? item.format(+item._proportion_.toFixed(2), item) : `${Util.toFixed(item._proportion_ * 100)}%`;
         maxLength = Math.max(maxLength, measureText(text));
     });
 

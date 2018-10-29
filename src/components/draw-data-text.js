@@ -91,7 +91,7 @@ export function drawPieText (series, opts, config, context, radius, center) {
 
     let seriesConvert = series.map((item) => {
         let arc = 2 * Math.PI - (item._start_ + 2 * Math.PI * item._proportion_ / 2);
-        let text = item.format ? item.format(+item._proportion_.toFixed(2)) : `${Util.toFixed(item._proportion_ * 100)}%`;
+        let text = item.format ? item.format(+item._proportion_.toFixed(2), item) : `${Util.toFixed(item._proportion_ * 100)}%`;
         let color = item.color;
         return { arc, text, color };
     });

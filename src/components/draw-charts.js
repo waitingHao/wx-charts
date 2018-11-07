@@ -1,4 +1,4 @@
-import { drawYAxisGrid, drawToolTipBridge, drawRadarDataPoints, drawCanvas, drawLegend, drawPieDataPoints, drawLineDataPoints, drawAreaDataPoints, drawColumnDataPoints, drawYAxis, drawXAxis } from './draw'
+import { drawYAxisGrid, drawToolTipBridge, drawRadarDataPoints, drawCanvas, drawLegend, drawPieDataPoints, drawLineDataPoints, drawAreaDataPoints, drawColumnDataPoints, drawYAxis, drawXAxis, drawMarkLine } from './draw'
 import { calYAxisData, getPieTextMaxLength, calCategoriesData, calLegendData } from './charts-data'
 import { fillSeriesColor } from './charts-util';
 import Animation from './animation'
@@ -38,6 +38,7 @@ export default function drawCharts (type, opts, config, context) {
                     drawXAxis(categories, opts, config, context);
                     drawLegend(opts.series, opts, config, context);                   
                     drawYAxis(series, opts, config, context);
+                    drawMarkLine(series, opts, config, context);
                     drawToolTipBridge(opts, config, context, process);
                     drawCanvas(opts, context);
                 },

@@ -9,6 +9,7 @@ const config = {
     columePadding: 3,
     fontSize: 10,
     dataPointShape: ['diamond', 'circle', 'triangle', 'rect'],
+    markLineColors: ['red', 'yellow', 'green'],
     colors: ['#7cb5ec', '#f7a35c', '#434348', '#90ed7d', '#f15c80', '#8085e9'],
     pieChartLinePadding: 25,
     pieChartTextPadding: 15,
@@ -23,6 +24,6 @@ const config = {
     toolTipLineHeight: 14,
     radarGridCount: 3,
     radarLabelTextMargin: 15
-}
+};
 
 export default config;

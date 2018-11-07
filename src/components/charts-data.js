@@ -4,7 +4,11 @@ import { measureText, convertCoordinateOrigin, isInAngleRange } from './charts-u
 
 function dataCombine(series) {
     return series.reduce(function(a, b) {
-        return (a.data ? a.data : a).concat(b.data);
+        // 支持扩展类型数据
+        let data = b.data.map(function (value) {
+            return ((typeof value === 'object') && !isNaN(value.value)) ? value.value : value;
+        });
+        return a.concat(data);
     }, []);
 }
 
@@ -15,7 +19,17 @@ export function getSeriesDataItem(series, index) {
             let seriesItem = {};
             seriesItem.color = item.color;
             seriesItem.name = item.name;
-            seriesItem.data = item.format ? item.format(item.data[index], item) : item.data[index];
+            // 扩展数据配置项
+            let itemData = item.data[index];
+            if (item.format) {
+                seriesItem.data = item.format(itemData, item);
+            } else {
+                if (typeof itemData === 'object' && itemData.value) {
+                    seriesItem.data = itemData.value;
+                } else {
+                    itemData.value = itemData;
+                }
+            }
             data.push(seriesItem);
         }
     });
@@ -153,24 +167,34 @@ export function isInExactPieChartArea (currentPoints, center, radius) {
     return Math.pow(currentPoints.x - center.x, 2) + Math.pow(currentPoints.y - center.y, 2) <= Math.pow(radius, 2);
 }
 
+/**
+ * 把数据点坐标分组，中间有断层会把点分成两组
+ *
+ * 用于在画线时，中断的点处不用线连接
+ *
+ * @param points    所有数据点坐标
+ * @returns {Array} 数据点坐标分组
+ */
 export function splitPoints(points) {
-    let newPoints = [];
+    let groupPoints = [];
     let items = [];
     points.forEach((item, index) => {
         if (item !== null) {
             items.push(item);
         } else {
+            // 有断层，把前面的数据放到一组
             if (items.length) {
-                newPoints.push(items);
+                groupPoints.push(items);
             }
+            // 下一组数据
             items = [];
         }
     });
     if (items.length) {
-        newPoints.push(items);
+        groupPoints.push(items);
     }
 
-    return newPoints;
+    return groupPoints;
 }
 
 export function calLegendData(series, opts, config) {
@@ -328,21 +352,49 @@ export function getXAxisPoints(categories, opts, config) {
 
 export function getDataPoints(data, minRange, maxRange, xAxisPoints, eachSpacing, opts, config, process = 1) {
     let points = [];
+    // 可用高度
     let validHeight = opts.height - 2 * config.padding - config.xAxisHeight - config.legendHeight;
     data.forEach(function(item, index) {
-        if (item === null) {
+        let value = null;
+        let color = null;
+        if (typeof item === 'object') {
+            value = item.value;
+            if (item.itemStyle && item.itemStyle.color) {
+                color = item.itemStyle.color;
+            }
+        }
+        if (!value) {
             points.push(null);
         } else {        
             let point = {};
             point.x = xAxisPoints[index] + Math.round(eachSpacing / 2);
-            let height = validHeight * (item - minRange) / (maxRange - minRange);
+            // 计算点的高度在整个可用图形高度中的位置，可用高度 * (点数值 / 有效数值范围高度)
+            let height = validHeight * (value - minRange) / (maxRange - minRange);
             height *= process;
             point.y = opts.height - config.xAxisHeight - config.legendHeight - Math.round(height) - config.padding;
+            if (color) {
+                point.color = color;
+            }
             points.push(point);
         }
     });
 
     return points;
+}
+
+export function getYAxisLines(y, minRange, maxRange, xAxisPoints, eachSpacing, opts, config, process = 1) {
+    // 可用高度
+    let validHeight = opts.height - 2 * config.padding - config.xAxisHeight - config.legendHeight;
+
+    let point = {};
+    point.startX = xAxisPoints[0];
+    point.endX = xAxisPoints[xAxisPoints.length - 1]/* + Math.round(eachSpacing / 2)*/;
+    // 计算点的高度在整个可用图形高度中的位置，可用高度 * (点数值 / 有效数值范围高度)
+    let height = validHeight * (y - minRange) / (maxRange - minRange);
+    height *= process;
+    point.y = opts.height - config.xAxisHeight - config.legendHeight - Math.round(height) - config.padding;
+
+    return point;
 }
 
 export function getYAxisTextList(series, opts, config) {

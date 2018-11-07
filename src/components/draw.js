@@ -1,4 +1,4 @@
-import { getRadarDataPoints, getRadarCoordinateSeries, getMaxTextListLength, splitPoints, getPieDataPoints, calYAxisData, getXAxisPoints, getDataPoints, fixColumeData, calLegendData } from './charts-data'
+import { getRadarDataPoints, getRadarCoordinateSeries, getMaxTextListLength, splitPoints, getPieDataPoints, calYAxisData, getXAxisPoints, getDataPoints, fixColumeData, calLegendData, getYAxisLines } from './charts-data'
 import { convertCoordinateOrigin, measureText, calRotateTranslate, createCurveControlPoints } from './charts-util'
 import Util from '../util/util'
 import drawPointShape from './draw-data-shape'
@@ -175,6 +175,7 @@ export function drawLineDataPoints (series, opts, config, context, process = 1) 
 
     series.forEach(function(eachSeries, seriesIndex) {
         let data = eachSeries.data;
+        // 计算点的实际坐标
         let points = getDataPoints(data, minRange, maxRange, xAxisPoints, eachSpacing, opts, config, process);
         calPoints.push(points);
         let splitPointList = splitPoints(points);
@@ -209,7 +210,13 @@ export function drawLineDataPoints (series, opts, config, context, process = 1) 
         });
 
         if (opts.dataPointShape !== false) {        
-            let shape = config.dataPointShape[seriesIndex % config.dataPointShape.length];
+            let shape = null;
+            // 根据参数配置项来确定数据点形状，如果配置不在支持的形状里，那么从支持的形状列表中取
+            if (typeof opts.dataPointShape === 'string' && config.dataPointShape.includes(opts.dataPointShape)) {
+                shape = opts.dataPointShape;
+            } else {
+                shape = config.dataPointShape[seriesIndex % config.dataPointShape.length]
+            }
             drawPointShape(points, eachSeries.color, shape, context);
         }
     });
@@ -312,6 +319,71 @@ export function drawXAxis (categories, opts, config, context) {
     context.restore();
 }
 
+export function drawMarkLine(series, opts, config, context) {
+    if (!(opts.extra && opts.extra.markLine && opts.extra.markLine.data)) {
+        return;
+    }
+
+    let { ranges } = calYAxisData(series, opts, config);
+    let { xAxisPoints, eachSpacing } = getXAxisPoints(opts.categories, opts, config);
+    let minRange = ranges.pop();
+    let maxRange = ranges.shift();
+    let calPoints = [];
+
+    opts.extra.markLine.data.forEach(function (mark, seriesIndex) {
+        // 计算点的实际坐标
+        let point = getYAxisLines(mark.yAxis, minRange, maxRange, xAxisPoints, eachSpacing, opts, config);
+        calPoints.push(point);
+
+        context.beginPath();
+        let color;
+        if (mark.lineStyle && mark.lineStyle.color) {
+            color = mark.lineStyle.color;
+        } else {
+            color = config.markLineColors[seriesIndex % config.markLineColors.length]
+        }
+
+        context.setStrokeStyle(color);
+
+        let lineWidth = 2;
+        if (mark.lineStyle && mark.lineStyle.width) {
+            lineWidth = mark.lineStyle.width;
+        }
+        context.setLineWidth(lineWidth);
+
+        context.moveTo(point.startX, point.y);
+        context.lineTo(point.endX, point.y);
+
+        context.closePath();
+        context.stroke();
+
+        let text;
+        if (mark.label.show) {
+            context.setFillStyle(color);
+            if (typeof mark.label.formatter === 'function') {
+                text = mark.label.formatter();
+            }
+            if (typeof mark.label.formatter === 'string') {
+                text = mark.label.formatter;
+            }
+
+            if (!text) {
+                text = mark.yAxis;
+            }
+            let fontSize = 10;
+            context.setFontSize(fontSize);
+            context.fillText(text, point.endX, point.y + (fontSize / 2) - 2);
+        }
+
+    });
+
+    return {
+        xAxisPoints,
+        calPoints,
+        eachSpacing
+    };
+}
+
 export function drawYAxisGrid (opts, config, context) {
     let spacingValid = opts.height - 2 * config.padding - config.xAxisHeight - config.legendHeight;    
     let eachSpacing = Math.floor(spacingValid / config.yAxisSplit);
@@ -328,10 +400,12 @@ export function drawYAxisGrid (opts, config, context) {
     context.beginPath();
     context.setStrokeStyle(opts.yAxis.gridColor || "#cccccc")
     context.setLineWidth(1);
-    points.forEach(function(item, index) {
-        context.moveTo(startX, item);
-        context.lineTo(endX, item);
-    });
+    if (opts.yAxis.disableGrid !== true) {
+        points.forEach(function (item, index) {
+            context.moveTo(startX, item);
+            context.lineTo(endX, item);
+        });
+    }
     context.closePath();
     context.stroke();
 }

@@ -20,6 +20,7 @@ var config = {
     columePadding: 3,
     fontSize: 10,
     dataPointShape: ['diamond', 'circle', 'triangle', 'rect'],
+    markLineColors: ['red', 'yellow', 'green'],
     colors: ['#7cb5ec', '#f7a35c', '#434348', '#90ed7d', '#f15c80', '#8085e9'],
     pieChartLinePadding: 25,
     pieChartTextPadding: 15,
@@ -315,9 +316,19 @@ function measureText(text) {
     return width * fontSize / 10;
 }
 
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
+  return typeof obj;
+} : function (obj) {
+  return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+};
+
 function dataCombine(series) {
     return series.reduce(function (a, b) {
-        return (a.data ? a.data : a).concat(b.data);
+        // 支持扩展类型数据
+        var data = b.data.map(function (value) {
+            return (typeof value === 'undefined' ? 'undefined' : _typeof(value)) === 'object' && !isNaN(value.value) ? value.value : value;
+        });
+        return a.concat(data);
     }, []);
 }
 
@@ -328,15 +339,23 @@ function getSeriesDataItem(series, index) {
             var seriesItem = {};
             seriesItem.color = item.color;
             seriesItem.name = item.name;
-            seriesItem.data = item.format ? item.format(item.data[index]) : item.data[index];
+            // 扩展数据配置项
+            var itemData = item.data[index];
+            if (item.format) {
+                seriesItem.data = item.format(itemData, item);
+            } else {
+                if ((typeof itemData === 'undefined' ? 'undefined' : _typeof(itemData)) === 'object' && itemData.value) {
+                    seriesItem.data = itemData.value;
+                } else {
+                    itemData.value = itemData;
+                }
+            }
             data.push(seriesItem);
         }
     });
 
     return data;
 }
-
-
 
 function getMaxTextListLength(list) {
     var lengthList = list.map(function (item) {
@@ -466,24 +485,34 @@ function isInExactPieChartArea(currentPoints, center, radius) {
     return Math.pow(currentPoints.x - center.x, 2) + Math.pow(currentPoints.y - center.y, 2) <= Math.pow(radius, 2);
 }
 
+/**
+ * 把数据点坐标分组，中间有断层会把点分成两组
+ *
+ * 用于在画线时，中断的点处不用线连接
+ *
+ * @param points    所有数据点坐标
+ * @returns {Array} 数据点坐标分组
+ */
 function splitPoints(points) {
-    var newPoints = [];
+    var groupPoints = [];
     var items = [];
     points.forEach(function (item, index) {
         if (item !== null) {
             items.push(item);
         } else {
+            // 有断层，把前面的数据放到一组
             if (items.length) {
-                newPoints.push(items);
+                groupPoints.push(items);
             }
+            // 下一组数据
             items = [];
         }
     });
     if (items.length) {
-        newPoints.push(items);
+        groupPoints.push(items);
     }
 
-    return newPoints;
+    return groupPoints;
 }
 
 function calLegendData(series, opts, config) {
@@ -598,7 +627,7 @@ function getPieTextMaxLength(series) {
     series = getPieDataPoints(series);
     var maxLength = 0;
     series.forEach(function (item) {
-        var text = item.format ? item.format(+item._proportion_.toFixed(2)) : util.toFixed(item._proportion_ * 100) + '%';
+        var text = item.format ? item.format(+item._proportion_.toFixed(2), item) : util.toFixed(item._proportion_ * 100) + '%';
         maxLength = Math.max(maxLength, measureText(text));
     });
 
@@ -651,21 +680,51 @@ function getDataPoints(data, minRange, maxRange, xAxisPoints, eachSpacing, opts,
     var process = arguments.length > 7 && arguments[7] !== undefined ? arguments[7] : 1;
 
     var points = [];
+    // 可用高度
     var validHeight = opts.height - 2 * config.padding - config.xAxisHeight - config.legendHeight;
     data.forEach(function (item, index) {
-        if (item === null) {
+        var value = null;
+        var color = null;
+        if ((typeof item === 'undefined' ? 'undefined' : _typeof(item)) === 'object') {
+            value = item.value;
+            if (item.itemStyle && item.itemStyle.color) {
+                color = item.itemStyle.color;
+            }
+        }
+        if (!value) {
             points.push(null);
         } else {
             var point = {};
             point.x = xAxisPoints[index] + Math.round(eachSpacing / 2);
-            var height = validHeight * (item - minRange) / (maxRange - minRange);
+            // 计算点的高度在整个可用图形高度中的位置，可用高度 * (点数值 / 有效数值范围高度)
+            var height = validHeight * (value - minRange) / (maxRange - minRange);
             height *= process;
             point.y = opts.height - config.xAxisHeight - config.legendHeight - Math.round(height) - config.padding;
+            if (color) {
+                point.color = color;
+            }
             points.push(point);
         }
     });
 
     return points;
+}
+
+function getYAxisLines(y, minRange, maxRange, xAxisPoints, eachSpacing, opts, config) {
+    var process = arguments.length > 7 && arguments[7] !== undefined ? arguments[7] : 1;
+
+    // 可用高度
+    var validHeight = opts.height - 2 * config.padding - config.xAxisHeight - config.legendHeight;
+
+    var point = {};
+    point.startX = xAxisPoints[0];
+    point.endX = xAxisPoints[xAxisPoints.length - 1] /* + Math.round(eachSpacing / 2)*/;
+    // 计算点的高度在整个可用图形高度中的位置，可用高度 * (点数值 / 有效数值范围高度)
+    var height = validHeight * (y - minRange) / (maxRange - minRange);
+    height *= process;
+    point.y = opts.height - config.xAxisHeight - config.legendHeight - Math.round(height) - config.padding;
+
+    return point;
 }
 
 function getYAxisTextList(series, opts, config) {
@@ -721,48 +780,93 @@ function calYAxisData(series, opts, config) {
 }
 
 function drawPointShape(points, color, shape, context) {
-    context.beginPath();
+
     context.setStrokeStyle("#ffffff");
     context.setLineWidth(1);
-    context.setFillStyle(color);
 
-    if (shape === 'diamond') {
-        points.forEach(function (item, index) {
-            if (item !== null) {
+    points.forEach(function (item, index) {
+        if (!item) {
+            return;
+        }
+        if (item.color) {
+            context.setFillStyle(item.color);
+        }
+
+        context.beginPath();
+        switch (shape) {
+            case 'diamond':
                 context.moveTo(item.x, item.y - 4.5);
                 context.lineTo(item.x - 4.5, item.y);
                 context.lineTo(item.x, item.y + 4.5);
                 context.lineTo(item.x + 4.5, item.y);
                 context.lineTo(item.x, item.y - 4.5);
-            }
-        });
-    } else if (shape === 'circle') {
-        points.forEach(function (item, index) {
-            if (item !== null) {
+                break;
+            case 'circle':
                 context.moveTo(item.x + 3.5, item.y);
                 context.arc(item.x, item.y, 4, 0, 2 * Math.PI, false);
-            }
-        });
-    } else if (shape === 'rect') {
-        points.forEach(function (item, index) {
-            if (item !== null) {
+                break;
+            case 'rect':
                 context.moveTo(item.x - 3.5, item.y - 3.5);
                 context.rect(item.x - 3.5, item.y - 3.5, 7, 7);
-            }
-        });
-    } else if (shape === 'triangle') {
-        points.forEach(function (item, index) {
-            if (item !== null) {
+                break;
+            case 'triangle':
                 context.moveTo(item.x, item.y - 4.5);
                 context.lineTo(item.x - 4.5, item.y + 4.5);
                 context.lineTo(item.x + 4.5, item.y + 4.5);
                 context.lineTo(item.x, item.y - 4.5);
-            }
-        });
-    }
-    context.closePath();
-    context.fill();
+                break;
+        }
+
+        context.closePath();
+        context.fill();
+    });
     context.stroke();
+
+    // context.beginPath();
+    // context.setStrokeStyle("#ffffff");
+    // context.setLineWidth(1);
+    // context.setFillStyle(color);
+    //
+    // if (shape === 'diamond') {
+    //     points.forEach(function(item, index) {
+    //         if (item !== null) {
+    //             context.moveTo(item.x, item.y - 4.5);
+    //             context.lineTo(item.x - 4.5, item.y);
+    //             context.lineTo(item.x, item.y + 4.5);
+    //             context.lineTo(item.x + 4.5, item.y);
+    //             context.lineTo(item.x, item.y - 4.5);
+    //         }
+    //     });
+    // } else if (shape === 'circle') {
+    //     points.forEach(function(item, index) {
+    //         if (item !== null) {
+    //             if (item.color) {
+    //                 context.setFillStyle(item.color);
+    //             }
+    //             context.moveTo(item.x + 3.5, item.y)
+    //             context.arc(item.x, item.y, 4, 0, 2 * Math.PI, false)
+    //         }
+    //     });
+    // } else if (shape === 'rect') {
+    //     points.forEach(function(item, index) {
+    //         if (item !== null) {
+    //             context.moveTo(item.x - 3.5, item.y - 3.5);
+    //             context.rect(item.x - 3.5, item.y - 3.5, 7, 7);
+    //         }
+    //     });
+    // } else if (shape === 'triangle') {
+    //     points.forEach(function(item, index) {
+    //         if (item !== null) {
+    //             context.moveTo(item.x, item.y - 4.5);
+    //             context.lineTo(item.x - 4.5, item.y + 4.5);
+    //             context.lineTo(item.x + 4.5, item.y + 4.5);
+    //             context.lineTo(item.x, item.y - 4.5);
+    //         }
+    //     });
+    // }
+    // context.closePath();
+    // context.fill();
+    // context.stroke();
 }
 
 function drawRingTitle(opts, config, context) {
@@ -848,13 +952,14 @@ function drawRadarLabel(angleList, radius, centerPosition, opts, config, context
 }
 
 function drawPieText(series, opts, config, context, radius, center) {
-    var lineRadius = radius + config.pieChartLinePadding;
+    var lineRadius = radius + opts.pieChartLinePadding;
+    var textRadius = lineRadius + opts.pieChartTextPadding;
     var textObjectCollection = [];
     var lastTextObject = null;
 
     var seriesConvert = series.map(function (item) {
         var arc = 2 * Math.PI - (item._start_ + 2 * Math.PI * item._proportion_ / 2);
-        var text = item.format ? item.format(+item._proportion_.toFixed(2)) : util.toFixed(item._proportion_ * 100) + '%';
+        var text = item.format ? item.format(+item._proportion_.toFixed(2), item) : util.toFixed(item._proportion_ * 100) + '%';
         var color = item.color;
         return { arc: arc, text: text, color: color };
     });
@@ -868,7 +973,7 @@ function drawPieText(series, opts, config, context, radius, center) {
         var orginY2 = Math.sin(item.arc) * radius;
 
         // text start
-        var orginX3 = orginX1 >= 0 ? orginX1 + config.pieChartTextPadding : orginX1 - config.pieChartTextPadding;
+        var orginX3 = orginX1 >= 0 ? orginX1 + opts.pieChartTextPadding : orginX1 - opts.pieChartTextPadding;
         var orginY3 = orginY1;
 
         var textWidth = measureText(item.text);
@@ -1057,6 +1162,8 @@ function drawColumnDataPoints(series, opts, config, context) {
 
     var minRange = ranges.pop();
     var maxRange = ranges.shift();
+    var endY = opts.height - config.padding - config.xAxisHeight - config.legendHeight;
+
     context.save();
     if (opts._scrollDistance_ && opts._scrollDistance_ !== 0 && opts.enableScroll === true) {
         context.translate(opts._scrollDistance_, 0);
@@ -1217,6 +1324,7 @@ function drawLineDataPoints(series, opts, config, context) {
 
     series.forEach(function (eachSeries, seriesIndex) {
         var data = eachSeries.data;
+        // 计算点的实际坐标
         var points = getDataPoints(data, minRange, maxRange, xAxisPoints, eachSpacing, opts, config, process);
         calPoints.push(points);
         var splitPointList = splitPoints(points);
@@ -1251,7 +1359,13 @@ function drawLineDataPoints(series, opts, config, context) {
         });
 
         if (opts.dataPointShape !== false) {
-            var shape = config.dataPointShape[seriesIndex % config.dataPointShape.length];
+            var shape = null;
+            // 根据参数配置项来确定数据点形状，如果配置不在支持的形状里，那么从支持的形状列表中取
+            if (typeof opts.dataPointShape === 'string' && config.dataPointShape.includes(opts.dataPointShape)) {
+                shape = opts.dataPointShape;
+            } else {
+                shape = config.dataPointShape[seriesIndex % config.dataPointShape.length];
+            }
             drawPointShape(points, eachSeries.color, shape, context);
         }
     });
@@ -1286,8 +1400,6 @@ function drawToolTipBridge(opts, config, context, process) {
 function drawXAxis(categories, opts, config, context) {
     var _getXAxisPoints4 = getXAxisPoints(categories, opts, config),
         xAxisPoints = _getXAxisPoints4.xAxisPoints,
-        startX = _getXAxisPoints4.startX,
-        endX = _getXAxisPoints4.endX,
         eachSpacing = _getXAxisPoints4.eachSpacing;
 
     var startY = opts.height - config.padding - config.xAxisHeight - config.legendHeight;
@@ -1363,6 +1475,75 @@ function drawXAxis(categories, opts, config, context) {
     context.restore();
 }
 
+function drawMarkLine(series, opts, config, context) {
+    if (!(opts.extra && opts.extra.markLine && opts.extra.markLine.data)) {
+        return;
+    }
+
+    var _calYAxisData4 = calYAxisData(series, opts, config),
+        ranges = _calYAxisData4.ranges;
+
+    var _getXAxisPoints5 = getXAxisPoints(opts.categories, opts, config),
+        xAxisPoints = _getXAxisPoints5.xAxisPoints,
+        eachSpacing = _getXAxisPoints5.eachSpacing;
+
+    var minRange = ranges.pop();
+    var maxRange = ranges.shift();
+    var calPoints = [];
+
+    opts.extra.markLine.data.forEach(function (mark, seriesIndex) {
+        // 计算点的实际坐标
+        var point = getYAxisLines(mark.yAxis, minRange, maxRange, xAxisPoints, eachSpacing, opts, config);
+        calPoints.push(point);
+
+        context.beginPath();
+        var color = void 0;
+        if (mark.lineStyle && mark.lineStyle.color) {
+            color = mark.lineStyle.color;
+        } else {
+            color = config.markLineColors[seriesIndex % config.markLineColors.length];
+        }
+
+        context.setStrokeStyle(color);
+
+        var lineWidth = 2;
+        if (mark.lineStyle && mark.lineStyle.width) {
+            lineWidth = mark.lineStyle.width;
+        }
+        context.setLineWidth(lineWidth);
+
+        context.moveTo(point.startX, point.y);
+        context.lineTo(point.endX, point.y);
+
+        context.closePath();
+        context.stroke();
+
+        var text = void 0;
+        if (mark.label.show) {
+            context.setFillStyle(color);
+            if (typeof mark.label.formatter === 'function') {
+                text = mark.label.formatter();
+            }
+            if (typeof mark.label.formatter === 'string') {
+                text = mark.label.formatter;
+            }
+
+            if (!text) {
+                text = mark.yAxis;
+            }
+            var fontSize = 10;
+            context.setFontSize(fontSize);
+            context.fillText(text, point.endX, point.y + fontSize / 2 - 2);
+        }
+    });
+
+    return {
+        xAxisPoints: xAxisPoints,
+        calPoints: calPoints,
+        eachSpacing: eachSpacing
+    };
+}
+
 function drawYAxisGrid(opts, config, context) {
     var spacingValid = opts.height - 2 * config.padding - config.xAxisHeight - config.legendHeight;
     var eachSpacing = Math.floor(spacingValid / config.yAxisSplit);
@@ -1379,10 +1560,12 @@ function drawYAxisGrid(opts, config, context) {
     context.beginPath();
     context.setStrokeStyle(opts.yAxis.gridColor || "#cccccc");
     context.setLineWidth(1);
-    points.forEach(function (item, index) {
-        context.moveTo(startX, item);
-        context.lineTo(endX, item);
-    });
+    if (opts.yAxis.disableGrid !== true) {
+        points.forEach(function (item, index) {
+            context.moveTo(startX, item);
+            context.lineTo(endX, item);
+        });
+    }
     context.closePath();
     context.stroke();
 }
@@ -1392,8 +1575,8 @@ function drawYAxis(series, opts, config, context) {
         return;
     }
 
-    var _calYAxisData4 = calYAxisData(series, opts, config),
-        rangesFormat = _calYAxisData4.rangesFormat;
+    var _calYAxisData5 = calYAxisData(series, opts, config),
+        rangesFormat = _calYAxisData5.rangesFormat;
 
     var yAxisTotalWidth = config.yAxisWidth + config.yAxisTitleWidth;
 
@@ -1401,6 +1584,7 @@ function drawYAxis(series, opts, config, context) {
     var eachSpacing = Math.floor(spacingValid / config.yAxisSplit);
     var startX = config.padding + yAxisTotalWidth;
     var endX = opts.width - config.padding;
+    var startY = config.padding;
     var endY = opts.height - config.padding - config.xAxisHeight - config.legendHeight;
 
     // set YAxis background
@@ -1441,7 +1625,8 @@ function drawLegend(series, opts, config, context) {
     // legend margin top `config.padding`
 
     var _calLegendData = calLegendData(series, opts, config),
-        legendList = _calLegendData.legendList;
+        legendList = _calLegendData.legendList,
+        legendHeight = _calLegendData.legendHeight;
 
     var padding = 5;
     var marginTop = 8;
@@ -1512,7 +1697,11 @@ function drawPieDataPoints(series, opts, config, context) {
         x: opts.width / 2,
         y: (opts.height - config.legendHeight) / 2
     };
-    var radius = Math.min(centerPosition.x - config.pieChartLinePadding - config.pieChartTextPadding - config._pieTextMaxLength_, centerPosition.y - config.pieChartLinePadding - config.pieChartTextPadding);
+
+    opts.pieChartLinePadding = opts.pieChartLinePadding || config.pieChartLinePadding;
+    opts.pieChartTextPadding = opts.pieChartTextPadding || config.pieChartTextPadding;
+
+    var radius = Math.min(centerPosition.x - opts.pieChartLinePadding - opts.pieChartTextPadding - config._pieTextMaxLength_, centerPosition.y - opts.pieChartLinePadding - opts.pieChartTextPadding);
     if (opts.dataLabel) {
         radius -= 10;
     } else {
@@ -1524,8 +1713,8 @@ function drawPieDataPoints(series, opts, config, context) {
     });
     series.forEach(function (eachSeries) {
         context.beginPath();
-        context.setLineWidth(2);
-        context.setStrokeStyle('#ffffff');
+        context.setLineWidth(opts.pieStrokeWidth || 2);
+        context.setStrokeStyle(opts.pieStrokeColor || '#ffffff');
         context.setFillStyle(eachSeries.color);
         context.moveTo(centerPosition.x, centerPosition.y);
         context.arc(centerPosition.x, centerPosition.y, radius, eachSeries._start_, eachSeries._start_ + 2 * eachSeries._proportion_ * Math.PI);
@@ -1792,6 +1981,7 @@ function drawCharts(type, opts, config, context) {
                     drawXAxis(categories, opts, config, context);
                     drawLegend(opts.series, opts, config, context);
                     drawYAxis(series, opts, config, context);
+                    drawMarkLine(series, opts, config, context);
                     drawToolTipBridge(opts, config, context, process);
                     drawCanvas(opts, context);
                 },

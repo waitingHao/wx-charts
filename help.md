@@ -75,6 +75,8 @@ opts.yAxis.disabled Boolean default false 不绘制Y轴
 
 opts.yAxis.disableGrid Boolean default false 横向网络
 
+opts.yAxis.axisTick.show Boolean default true 是否显示坐标轴刻度。
+
 opts.yAxis.axisLabel.show Boolean default true 是否显示刻度标签。
 opts.yAxis.axisLabel.interval Number 坐标轴刻度标签的显示间隔，在类目轴中有效。默认会采用标签不重叠的策略间隔显示标签。
 
@@ -108,6 +110,7 @@ opts.extra.markLine.data.lineStyle Number
 opts.extra.markLine.data.lineStyle.yAxis Number 标注值
 opts.extra.markLine.data.lineStyle.color String 线的颜色。 
 opts.extra.markLine.data.lineStyle.width String 线宽。 
+opts.extra.markLine.data.lineStyle.type String [ default: solid ] 线的类型。 可选： 'solid' 'dashed' 'dotted'。 
 opts.extra.markLine.data.label 该数据项标签的样式，起点和终点项的 label会合并到一起。 
 opts.extra.markLine.data.label.show 是否显示标签。
 opts.extra.markLine.data.label.formatter 标签内容格式器，支持字符串模板和回调函数两种形式，字符串模板与回调函数返回的字符串均支持用 \n 换行。

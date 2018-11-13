@@ -1,5 +1,5 @@
 import { getRadarDataPoints, getRadarCoordinateSeries, getMaxTextListLength, splitPoints, getPieDataPoints, calYAxisData,
-    getXAxisPoints, getDataPoints, fixColumeData, calLegendData, getYAxisLines, calStartX } from './charts-data'
+    getXAxisPoints, getDataPoints, fixColumeData, calLegendData, getYAxisLines, calStartX, calStartY } from './charts-data'
 import { convertCoordinateOrigin, measureText, calRotateTranslate, createCurveControlPoints } from './charts-util'
 import Util from '../util/util'
 import drawPointShape from './draw-data-shape'
@@ -26,7 +26,7 @@ export function drawColumnDataPoints (series, opts, config, context, process = 1
     let { xAxisPoints, eachSpacing } = getXAxisPoints(opts.categories, opts, config);
     let minRange = ranges.pop();
     let maxRange = ranges.shift();
-    let endY = opts.height - config.padding - config.xAxisHeight - config.legendHeight;
+    let endY = calStartY(config, opts);
 
     context.save();
     if (opts._scrollDistance_ && opts._scrollDistance_ !== 0 && opts.enableScroll === true) {    
@@ -38,19 +38,23 @@ export function drawColumnDataPoints (series, opts, config, context, process = 1
         let points = getDataPoints(data, minRange, maxRange, xAxisPoints, eachSpacing, opts, config, process);
         points = fixColumeData(points, eachSpacing, series.length, seriesIndex, config, opts);
 
-        // 绘制柱状数据图
-        context.beginPath();
-        context.setFillStyle(eachSeries.color);
+        // 绘制柱状数据图 TODO 性能优化
         points.forEach(function(item, index) {
-            if (item !== null) { 
+            if (item !== null) {
+                context.beginPath();
+                context.setFillStyle(item.color || eachSeries.color);
+
                 let startX = item.x - item.width / 2 + 1;
-                let height = opts.height - item.y - config.padding - config.xAxisHeight - config.legendHeight;
+                // let height = opts.height - item.y - config.padding - config.xAxisHeight - config.legendHeight;
+                let height = endY - item.y;
                 context.moveTo(startX, item.y);
+                // TODO 添加圆角矩形支持
                 context.rect(startX, item.y, item.width - 2, height);
+
+                context.closePath();
+                context.fill();
             }
         });
-        context.closePath();
-        context.fill();
     });
     series.forEach(function(eachSeries, seriesIndex) {
         let data = eachSeries.data;
@@ -72,7 +76,7 @@ export function drawAreaDataPoints (series, opts, config, context, process = 1) 
     let { xAxisPoints, eachSpacing } = getXAxisPoints(opts.categories, opts, config);
     let minRange = ranges.pop();
     let maxRange = ranges.shift();
-    let endY = opts.height - config.padding - config.xAxisHeight - config.legendHeight;
+    let endY = calStartY(config, opts);
     let calPoints = [];
 
     context.save();
@@ -162,7 +166,7 @@ export function drawLineArea (series, opts, config, calPoints, xAxisPoints, cont
         return;
     }
     // TODO 封装
-    let startY = opts.height - config.padding - config.xAxisHeight - config.legendHeight;
+    let startY = calStartY(config, opts);
     calPoints.forEach(function (cp, index) {
         if (!series[index].areaStyle || !series[index].areaStyle.color) {
             return;
@@ -279,8 +283,19 @@ export function drawToolTipBridge (opts, config, context, process) {
 
 export function drawXAxis (categories, opts, config, context) {
     let { xAxisPoints, startX, endX, eachSpacing } = getXAxisPoints(categories, opts, config);
-    let startY = opts.height - config.padding - config.xAxisHeight - config.legendHeight;
+    // let startY = opts.height - config.padding - config.xAxisHeight - config.legendHeight;
+    let startY = calStartY(config, opts);
     let endY = startY + config.xAxisLineHeight;
+
+    // 对X轴列表做抽稀处理 TODO 添加自定义间隔
+    let ratio;
+    if (opts.xAxis && opts.xAxis.axisLabel && opts.xAxis.axisLabel.interval) {
+        ratio = opts.xAxis.axisLabel.interval;
+    } else {
+        let validWidth = opts.width - config.padding - calStartX(config, opts);
+        let maxXAxisListLength = Math.min(categories.length, Math.ceil(validWidth / config.fontSize / 1.5));
+        ratio = Math.ceil(categories.length / maxXAxisListLength);
+    }
 
     context.save();
     if (opts._scrollDistance_ && opts._scrollDistance_ !== 0) {
@@ -290,40 +305,61 @@ export function drawXAxis (categories, opts, config, context) {
     context.beginPath();
     context.setStrokeStyle(opts.xAxis.gridColor || "#cccccc");
 
-    if (opts.xAxis.disableGrid !== true) {
-        if (opts.xAxis.type === 'calibration') {
-            xAxisPoints.forEach(function(item, index) {
-                if (index > 0) {                
+    // 绘画x坐标刻度
+
+    if (opts.xAxis.disableGrid !== true && (opts.xAxis.axisTick && opts.xAxis.axisTick.show !== false)) {
+        xAxisPoints.forEach(function(item, index) {
+            if (index % ratio !== 0) {
+                return;
+            }
+            if (opts.xAxis.type === 'calibration') {
+                if (index > 0) {
                     context.moveTo(item - eachSpacing / 2, startY);
                     context.lineTo(item - eachSpacing / 2, startY + 4);
                 }
-            });
-        } else {
-            xAxisPoints.forEach(function(item, index) {
+            } else {
                 context.moveTo(item, startY);
                 context.lineTo(item, endY);
-            });
-        }
+            }
+        });
     }
     context.closePath();
     context.stroke();
-
-    // 对X轴列表做抽稀处理 TODO 添加自定义间隔
-    let validWidth = opts.width - config.padding - calStartX(config, opts);
-    let maxXAxisListLength = Math.min(categories.length, Math.ceil(validWidth / config.fontSize / 1.5));
-    let ratio = Math.ceil(categories.length / maxXAxisListLength);
 
     categories = categories.map((item, index) => {
         return index % ratio !== 0 ? '' : item;
     });
 
+    // x坐标标签
     if (config._xAxisTextAngle_ === 0) {
+        // 不倾斜
         context.beginPath();
         context.setFontSize(config.fontSize);
         context.setFillStyle(opts.xAxis.fontColor || '#666666');
+        context.setTextAlign('center');
         categories.forEach(function(item, index) {
-            let offset = eachSpacing / 2 - measureText(item) / 2;
-            context.fillText(item, xAxisPoints[index] + offset, startY + config.fontSize + 5);
+            // 添加分行支持
+            let items;
+            if (item) {
+                items = item.toString().split('\n');
+            } else {
+                items = [item];
+            }
+
+            let textWidth = items.reduce(function (sum, single) {
+                return Math.max(sum, measureText(single));
+            }, 0);
+
+            // 居中样式，不用加文本偏移
+            // let offset = eachSpacing / 2 - textWidth / 2;
+            let offset = eachSpacing / 2;
+            items.forEach(function (t, tIndex) {
+                let y = startY + config.fontSize + 5;
+                if (tIndex > 0) {
+                    y += config.fontSize + 2;
+                }
+                context.fillText(t, xAxisPoints[index] + offset, y, textWidth);
+            });
         });
         context.closePath();
         context.stroke();
@@ -374,16 +410,21 @@ export function drawMarkLine(series, opts, config, context) {
 
         context.setStrokeStyle(color);
 
+        context.setLineDash(null);
         let lineWidth = 2;
-        if (mark.lineStyle && mark.lineStyle.width) {
-            lineWidth = mark.lineStyle.width;
+        if (mark.lineStyle) {
+            if (mark.lineStyle.width) {
+                lineWidth = mark.lineStyle.width;
+            }
+            if (mark.lineStyle.type === 'dashed') {
+                context.setLineDash([2, 1]);
+            }
         }
         context.setLineWidth(lineWidth);
 
         context.moveTo(point.startX, point.y);
         context.lineTo(point.endX, point.y);
 
-        context.closePath();
         context.stroke();
 
         let text;
@@ -411,6 +452,8 @@ export function drawMarkLine(series, opts, config, context) {
 
     });
 
+    context.setLineDash(null);
+
     return {
         xAxisPoints,
         calPoints,
@@ -420,7 +463,8 @@ export function drawMarkLine(series, opts, config, context) {
 
 
 export function drawYAxisGrid (opts, config, context) {
-    let spacingValid = opts.height - 2 * config.padding - config.xAxisHeight - config.legendHeight;    
+    // let spacingValid = opts.height - 2 * config.padding - config.xAxisHeight - config.legendHeight;
+    let spacingValid = calStartY(config, opts) - config.padding;
     let eachSpacing = Math.floor(spacingValid / config.yAxisSplit);
     // let yAxisTotalWidth = config.yAxisWidth + config.yAxisTitleWidth;
     // let startX = config.padding + yAxisTotalWidth;
@@ -458,8 +502,9 @@ export function drawYAxis (series, opts, config, context) {
 
     let endX = opts.width - config.padding;
     let startY = config.padding;
-    let endY = opts.height - config.padding - config.xAxisHeight - config.legendHeight;
+    let endY = calStartY(config, opts);
 
+    context.beginPath();
     context.setStrokeStyle(opts.xAxis.gridColor || "#cccccc");
     context.moveTo(startX, startY);
     context.lineTo(startX, endY);
@@ -472,7 +517,7 @@ export function drawYAxis (series, opts, config, context) {
     
     let { rangesFormat } = calYAxisData(series, opts, config);
 
-    let spacingValid = opts.height - 2 * config.padding - config.xAxisHeight - config.legendHeight;
+    let spacingValid = calStartY(config, opts) - config.padding;
     let eachSpacing = Math.floor(spacingValid / config.yAxisSplit);
     
 

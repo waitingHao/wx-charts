@@ -232,6 +232,16 @@ export function calLegendData(series, opts, config) {
     }
 }
 
+/**
+ * 计算目录样式数据
+ *
+ * 包括label角度
+ *
+ * @param categories
+ * @param opts
+ * @param config
+ * @returns {{angle: number, xAxisHeight: (*|number)}}
+ */
 export function calCategoriesData(categories, opts, config) {
     let result = {
         angle: 0,
@@ -241,12 +251,22 @@ export function calCategoriesData(categories, opts, config) {
 
     // get max length of categories text
     let categoriesTextLenth = categories.map((item) => {
-        return measureText(item);
+        // 添加带换行符的宽度判断逻辑
+        let textWidth = item.toString().split('\n').reduce(function (sum, single) {
+            return Math.max(sum, measureText(single));
+        }, 0);
+        return textWidth;
     });
 
     let maxTextLength = Math.max.apply(this, categoriesTextLenth);
 
-    if ( maxTextLength + 2 * config.xAxisTextPadding > eachSpacing) {
+    // 如果x坐标标签文字大于间隔，倾斜
+    let chartEachSpacing = eachSpacing;
+    // 如果手动设置了间隔配置，计算实际间隔大小，而不是一直用单元隔的大小
+    if (opts.xAxis && opts.xAxis.axisLabel && opts.xAxis.axisLabel.interval) {
+        chartEachSpacing *= opts.xAxis.axisLabel.interval;
+    }
+    if ( maxTextLength + 2 * config.xAxisTextPadding > chartEachSpacing) {
         result.angle = 45 * Math.PI / 180;
         result.xAxisHeight = 2 * config.xAxisTextPadding + maxTextLength * Math.sin(result.angle);
     }
@@ -318,7 +338,7 @@ export function fixColumeData(points, eachSpacing, columnLen, index, config, opt
         
         if (opts.extra.column && opts.extra.column.width && +opts.extra.column.width > 0) {
             // customer column width
-            item.width = Math.min(item.width, +opts.extra.column.width);
+            item.width = Math.min(((eachSpacing - 2) / columnLen), +opts.extra.column.width);
         } else {
             // default width should less tran 25px
             // don't ask me why, I don't know
@@ -341,6 +361,16 @@ export function calStartX(config, opts) {
     }
 
     return startX;
+}
+
+export function calStartY(config, opts) {
+    let startY = opts.height - config.padding - config.xAxisHeight - config.legendHeight;
+    if (opts && opts.grid) {
+        if (opts.grid.bottom) {
+            startY -= opts.grid.bottom;
+        }
+    }
+    return startY;
 }
 
 export function getXAxisPoints(categories, opts, config) {
@@ -367,7 +397,8 @@ export function getXAxisPoints(categories, opts, config) {
 export function getDataPoints(data, minRange, maxRange, xAxisPoints, eachSpacing, opts, config, process = 1) {
     let points = [];
     // 可用高度
-    let validHeight = opts.height - 2 * config.padding - config.xAxisHeight - config.legendHeight;
+    // let validHeight = opts.height - 2 * config.padding - config.xAxisHeight - config.legendHeight;
+    let validHeight = calStartY(config, opts) - config.padding;
     data.forEach(function(item, index) {
         let value = null;
         let color = null;
@@ -380,6 +411,8 @@ export function getDataPoints(data, minRange, maxRange, xAxisPoints, eachSpacing
             if (item.symbolSize) {
                 size = item.symbolSize;
             }
+        } else {
+            value = item;
         }
         if (!value) {
             points.push(null);
@@ -389,7 +422,8 @@ export function getDataPoints(data, minRange, maxRange, xAxisPoints, eachSpacing
             // 计算点的高度在整个可用图形高度中的位置，可用高度 * (点数值 / 有效数值范围高度)
             let height = validHeight * (value - minRange) / (maxRange - minRange);
             height *= process;
-            point.y = opts.height - config.xAxisHeight - config.legendHeight - Math.round(height) - config.padding;
+            // point.y = opts.height - config.xAxisHeight - config.legendHeight - Math.round(height) - config.padding;
+            point.y = calStartY(config, opts) - Math.round(height);
             if (color) {
                 point.color = color;
             }
@@ -404,8 +438,9 @@ export function getDataPoints(data, minRange, maxRange, xAxisPoints, eachSpacing
 }
 
 export function getYAxisLines(y, minRange, maxRange, xAxisPoints, eachSpacing, opts, config, process = 1) {
+    let startY = calStartY(config, opts);
     // 可用高度
-    let validHeight = opts.height - 2 * config.padding - config.xAxisHeight - config.legendHeight;
+    let validHeight = startY - config.padding;
 
     let point = {};
     point.startX = xAxisPoints[0];
@@ -413,7 +448,7 @@ export function getYAxisLines(y, minRange, maxRange, xAxisPoints, eachSpacing, o
     // 计算点的高度在整个可用图形高度中的位置，可用高度 * (点数值 / 有效数值范围高度)
     let height = validHeight * (y - minRange) / (maxRange - minRange);
     height *= process;
-    point.y = opts.height - config.xAxisHeight - config.legendHeight - Math.round(height) - config.padding;
+    point.y = startY - Math.round(height);
 
     return point;
 }

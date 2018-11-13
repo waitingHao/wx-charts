@@ -11,10 +11,13 @@ let Charts = function(opts) {
     opts.yAxis = opts.yAxis || {};
     opts.xAxis = opts.xAxis || {};
     opts.extra = opts.extra || {};
-    opts.legend = opts.legend === false ? false : true;
-    opts.animation = opts.animation === false ? false : true;
+    opts.legend = opts.legend !== false;
+    opts.animation = opts.animation !== false;
     let config = assign({}, Config);
-    config.yAxisTitleWidth = opts.yAxis.disabled !== true && opts.yAxis.title ? config.yAxisTitleWidth : 0;
+    if (opts.yAxis.disabled === true || !opts.yAxis.title || (opts.yAxis && opts.yAxis.axisLabel && opts.yAxis.axisLabel.show === false)) {
+        config.yAxisTitleWidth = 0;
+    }
+    // config.yAxisTitleWidth = opts.yAxis.disabled !== true && opts.yAxis.title ? config.yAxisTitleWidth : 0;
     config.pieChartLinePadding = opts.dataLabel === false ? 0 : config.pieChartLinePadding;
     config.pieChartTextPadding = opts.dataLabel === false ? 0 : config.pieChartTextPadding;
 

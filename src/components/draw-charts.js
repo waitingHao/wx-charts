@@ -1,4 +1,4 @@
-import { drawYAxisGrid, drawToolTipBridge, drawRadarDataPoints, drawCanvas, drawLegend, drawPieDataPoints, drawLineDataPoints, drawAreaDataPoints, drawColumnDataPoints, drawYAxis, drawXAxis, drawMarkLine } from './draw'
+import { drawYAxisGrid, drawToolTipBridge, drawRadarDataPoints, drawCanvas, drawLegend, drawPieDataPoints, drawLineDataPoints, drawAreaDataPoints, drawColumnDataPoints, drawYAxis, drawXAxis, drawMarkLine, drawLineArea } from './draw'
 import { calYAxisData, getPieTextMaxLength, calCategoriesData, calLegendData } from './charts-data'
 import { fillSeriesColor } from './charts-util';
 import Animation from './animation'
@@ -32,13 +32,14 @@ export default function drawCharts (type, opts, config, context) {
                 onProcess: (process) => {
                     drawYAxisGrid(opts, config, context);
                     let { xAxisPoints, calPoints, eachSpacing } = drawLineDataPoints(series, opts, config, context, process);
+                    drawMarkLine(series, opts, config, context);
+                    drawLineArea(series, opts, config, calPoints, xAxisPoints, context);
                     this.chartData.xAxisPoints = xAxisPoints;
                     this.chartData.calPoints = calPoints;
                     this.chartData.eachSpacing = eachSpacing;
                     drawXAxis(categories, opts, config, context);
                     drawLegend(opts.series, opts, config, context);                   
                     drawYAxis(series, opts, config, context);
-                    drawMarkLine(series, opts, config, context);
                     drawToolTipBridge(opts, config, context, process);
                     drawCanvas(opts, context);
                 },

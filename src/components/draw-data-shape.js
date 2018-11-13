@@ -22,7 +22,7 @@ export default function drawPointShape (points, color, shape, context) {
                 break;
             case 'circle':
                 context.moveTo(item.x + 3.5, item.y);
-                context.arc(item.x, item.y, 4, 0, 2 * Math.PI, false);
+                context.arc(item.x, item.y, item.size || 4, 0, 2 * Math.PI, false);
                 break;
             case 'rect':
                 context.moveTo(item.x - 3.5, item.y - 3.5);

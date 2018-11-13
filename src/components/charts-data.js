@@ -100,7 +100,8 @@ export function findCurrentIndex (currentPoints, xAxisPoints, opts, config, offs
 
 export function isInExactChartArea (currentPoints, opts, config) {
     return currentPoints.x < opts.width - config.padding
-        && currentPoints.x > config.padding + config.yAxisWidth + config.yAxisTitleWidth
+        // && currentPoints.x > config.padding + config.yAxisWidth + config.yAxisTitleWidth
+        && currentPoints.x > calStartX(config, opts)
         && currentPoints.y > config.padding
         && currentPoints.y < opts.height - config.legendHeight - config.xAxisHeight - config.padding
 }
@@ -329,14 +330,27 @@ export function fixColumeData(points, eachSpacing, columnLen, index, config, opt
     });
 }
 
-export function getXAxisPoints(categories, opts, config) {
+export function calStartX(config, opts) {
     let yAxisTotalWidth = config.yAxisWidth + config.yAxisTitleWidth;
-    let spacingValid = opts.width - 2 * config.padding - yAxisTotalWidth;
+    let startX = config.padding + yAxisTotalWidth;
+
+    if (opts && opts.grid) {
+        if (opts.grid.left) {
+            startX += opts.grid.left;
+        }
+    }
+
+    return startX;
+}
+
+export function getXAxisPoints(categories, opts, config) {
+    let startX = calStartX(config, opts);
+    let spacingValid = opts.width - config.padding - startX;
+
     let dataCount = opts.enableScroll ? Math.min(5, categories.length) : categories.length;
     let eachSpacing = spacingValid / dataCount;
 
     let xAxisPoints = [];
-    let startX = config.padding + yAxisTotalWidth;
     let endX = opts.width - config.padding;
     categories.forEach(function(item, index) {
         xAxisPoints.push(startX + index * eachSpacing);
@@ -357,10 +371,14 @@ export function getDataPoints(data, minRange, maxRange, xAxisPoints, eachSpacing
     data.forEach(function(item, index) {
         let value = null;
         let color = null;
+        let size = null;
         if (typeof item === 'object') {
             value = item.value;
             if (item.itemStyle && item.itemStyle.color) {
                 color = item.itemStyle.color;
+            }
+            if (item.symbolSize) {
+                size = item.symbolSize;
             }
         }
         if (!value) {
@@ -374,6 +392,9 @@ export function getDataPoints(data, minRange, maxRange, xAxisPoints, eachSpacing
             point.y = opts.height - config.xAxisHeight - config.legendHeight - Math.round(height) - config.padding;
             if (color) {
                 point.color = color;
+            }
+            if (size) {
+                point.size = size;
             }
             points.push(point);
         }
@@ -442,7 +463,7 @@ export function calYAxisData(series, opts, config) {
         yAxisWidth = Math.max(yAxisWidth, measureText(item) + 5);
         return item;
     });
-    if (opts.yAxis.disabled === true) {
+    if (opts.yAxis.disabled === true || (opts.yAxis && opts.yAxis.axisLabel && opts.yAxis.axisLabel.show === false)) {
         yAxisWidth = 0;
     }
 

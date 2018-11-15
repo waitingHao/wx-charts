@@ -339,6 +339,11 @@ export function fixColumeData(points, eachSpacing, columnLen, index, config, opt
         if (opts.extra.column && opts.extra.column.width && +opts.extra.column.width > 0) {
             // customer column width
             item.width = Math.min(((eachSpacing - 2) / columnLen), +opts.extra.column.width);
+
+            // 添加圆角参数
+            if (opts.extra.column.barBorderRadius) {
+                item.barBorderRadius = opts.extra.column.barBorderRadius;
+            }
         } else {
             // default width should less tran 25px
             // don't ask me why, I don't know

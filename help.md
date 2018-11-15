@@ -89,6 +89,7 @@ opts.extra.lineStyle String (仅对line, area图表有效) 可选值：curve曲�
 opts.extra.column Object 柱状图相关配置
 
 opts.extra.column.width Number 柱状图每项的图形宽度，单位为px
+opts.extra.column.barBorderRadius Number 柱状图每项的图形圆角，单位为px [5, 5, 0, 0] （顺时针左上，右上，右下，左下）  5 统一设置四个角的圆角大小
 
 opts.extra.legendTextColor String 例如#7cb5ec default #cccccc legend文案颜色
 

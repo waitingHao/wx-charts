@@ -2,7 +2,7 @@ import { getRadarDataPoints, getRadarCoordinateSeries, getMaxTextListLength, spl
     getXAxisPoints, getDataPoints, fixColumeData, calLegendData, getYAxisLines, calStartX, calStartY } from './charts-data'
 import { convertCoordinateOrigin, measureText, calRotateTranslate, createCurveControlPoints } from './charts-util'
 import Util from '../util/util'
-import drawPointShape from './draw-data-shape'
+import {default as drawPointShape, drawRect} from './draw-data-shape'
 import { drawPointText, drawPieText, drawRingTitle, drawRadarLabel } from './draw-data-text'
 import { drawToolTip, drawToolTipSplitLine } from './draw-tooltip'
 import { assign } from '../util/polyfill/index';
@@ -41,18 +41,19 @@ export function drawColumnDataPoints (series, opts, config, context, process = 1
         // 绘制柱状数据图 TODO 性能优化
         points.forEach(function(item, index) {
             if (item !== null) {
-                context.beginPath();
-                context.setFillStyle(item.color || eachSeries.color);
-
                 let startX = item.x - item.width / 2 + 1;
                 // let height = opts.height - item.y - config.padding - config.xAxisHeight - config.legendHeight;
                 let height = endY - item.y;
-                context.moveTo(startX, item.y);
-                // TODO 添加圆角矩形支持
-                context.rect(startX, item.y, item.width - 2, height);
-
-                context.closePath();
-                context.fill();
+                // 添加圆角矩形支持
+                let width = item.width - 2;
+                if (!Array.isArray(item.barBorderRadius)) {
+                    item.barBorderRadius = [item.barBorderRadius];
+                }
+                let halfWidth = width / 2;
+                item.barBorderRadius = item.barBorderRadius.map(r => Math.min(halfWidth, r));
+                drawRect(startX, item.y, width, height, item.barBorderRadius, context, {
+                    color: item.color || eachSeries.color
+                });
             }
         });
     });

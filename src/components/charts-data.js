@@ -466,6 +466,11 @@ export function getYAxisTextList(series, opts, config) {
     });
     let minData = Math.min.apply(this, data);
     let maxData = Math.max.apply(this, data);
+    if (data.length === 0)
+    {
+        minData = maxData = 0;
+    }
+
     if (typeof opts.yAxis.min === 'number') {
         minData = Math.min(opts.yAxis.min, minData);
     }

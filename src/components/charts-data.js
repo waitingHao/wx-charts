@@ -4,10 +4,18 @@ import { measureText, convertCoordinateOrigin, isInAngleRange } from './charts-u
 
 function dataCombine(series) {
     return series.reduce(function(a, b) {
-        // 支持扩展类型数据
-        let data = b.data.map(function (value) {
-            return ((typeof value === 'object') && !isNaN(value.value)) ? value.value : value;
-        });
+        let data;
+        // 数组数据
+        if (Array.isArray(b.data)) {
+            // 支持扩展类型数据
+            data = b.data.map(function (value) {
+                return ((typeof value === 'object') && !isNaN(value.value)) ? value.value : value;
+            });
+        } else {
+            // 单数据
+            data = ((typeof b.data === 'object') && !isNaN(b.data.value)) ? b.data.value : b.data;
+        }
+
         return a.concat(data);
     }, []);
 }

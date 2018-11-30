@@ -620,6 +620,11 @@ export function drawLegend (series, opts, config, context) {
     });
 }
 export function drawPieDataPoints (series, opts, config, context, process = 1) {
+    // TODO 此处长宽没值会死循环，临时处理
+    if (!opts.width || !opts.height) {
+        throw new Error('图表长宽参数异常');
+    }
+
     let pieOption = opts.extra.pie || {};
     series = getPieDataPoints(series, process);
     let centerPosition = {

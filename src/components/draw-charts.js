@@ -53,6 +53,7 @@ export default function drawCharts (type, opts, config, context) {
                 timing: 'easeIn',
                 duration: duration,
                 onProcess: (process) => {
+                    // calYAxisDataInterval(series, opts, config);
                     drawYAxisGrid(opts, config, context);                    
                     let { xAxisPoints, eachSpacing } = drawColumnDataPoints(series, opts, config, context, process);
                     this.chartData.xAxisPoints = xAxisPoints;

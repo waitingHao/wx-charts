@@ -63,6 +63,8 @@ opts.yAxis.min Number Y轴起始值
 
 opts.yAxis.max Number Y轴终止值
 
+opts.yAxis.interval Number Y轴刻度间隔
+
 opts.yAxis.title String Y轴title
 
 opts.yAxis.gridColor String 例如#7cb5ec default #cccccc Y轴网格颜色

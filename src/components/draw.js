@@ -446,8 +446,8 @@ export function drawMarkLine(series, opts, config, context) {
             context.fillText(text, point.endX, point.y + (fontSize / 2) - 2);
         }
 
-        if (mark.showValue === true) {
-            let textInfo = context.measureText(mark.yAxis);
+        if (mark.showValue === true && mark.yAxis) {
+            let textInfo = context.measureText(mark.yAxis.toString());
             context.fillText(mark.yAxis, point.startX - textInfo.width - 2, point.y + (fontSize / 2) - 2);
         }
 

@@ -390,65 +390,69 @@ export function drawMarkLine(series, opts, config, context) {
         return;
     }
 
-    let { ranges } = calYAxisData(series, opts, config);
-    let { xAxisPoints, eachSpacing } = getXAxisPoints(opts.categories, opts, config);
+    let {ranges} = calYAxisData(series, opts, config);
+    let {xAxisPoints, eachSpacing} = getXAxisPoints(opts.categories, opts, config);
     let minRange = ranges.pop();
     let maxRange = ranges.shift();
     let calPoints = [];
 
     opts.extra.markLine.data.forEach(function (mark, seriesIndex) {
         // 计算点的实际坐标
-        let point = getYAxisLines(mark.yAxis, minRange, maxRange, xAxisPoints, eachSpacing, opts, config);
+        let point = getYAxisLines(mark.yAxis, {minRange, maxRange}, xAxisPoints, eachSpacing, opts, config);
         calPoints.push(point);
 
-        context.beginPath();
-        let color;
-        if (mark.lineStyle && mark.lineStyle.color) {
-            color = mark.lineStyle.color;
-        } else {
-            color = config.markLineColors[seriesIndex % config.markLineColors.length]
-        }
+        // 图标线超出y坐标不绘制
+        if (point.y > point.endY) {
 
-        context.setStrokeStyle(color);
-
-        context.setLineDash(null);
-        let lineWidth = 2;
-        if (mark.lineStyle) {
-            if (mark.lineStyle.width) {
-                lineWidth = mark.lineStyle.width;
-            }
-            if (mark.lineStyle.type === 'dashed') {
-                context.setLineDash([2, 1]);
-            }
-        }
-        context.setLineWidth(lineWidth);
-
-        context.moveTo(point.startX, point.y);
-        context.lineTo(point.endX, point.y);
-
-        context.stroke();
-
-        let text;
-        let fontSize = 10;
-        if (mark.label.show) {
-            context.setFillStyle(color);
-            if (typeof mark.label.formatter === 'function') {
-                text = mark.label.formatter();
-            }
-            if (typeof mark.label.formatter === 'string') {
-                text = mark.label.formatter;
+            context.beginPath();
+            let color;
+            if (mark.lineStyle && mark.lineStyle.color) {
+                color = mark.lineStyle.color;
+            } else {
+                color = config.markLineColors[seriesIndex % config.markLineColors.length]
             }
 
-            if (!text) {
-                text = mark.yAxis;
-            }
-            context.setFontSize(fontSize);
-            context.fillText(text, point.endX, point.y + (fontSize / 2) - 2);
-        }
+            context.setStrokeStyle(color);
 
-        if (mark.showValue === true && mark.yAxis) {
-            let textInfo = context.measureText(mark.yAxis.toString());
-            context.fillText(mark.yAxis, point.startX - textInfo.width - 2, point.y + (fontSize / 2) - 2);
+            context.setLineDash(null);
+            let lineWidth = 2;
+            if (mark.lineStyle) {
+                if (mark.lineStyle.width) {
+                    lineWidth = mark.lineStyle.width;
+                }
+                if (mark.lineStyle.type === 'dashed') {
+                    context.setLineDash([2, 1]);
+                }
+            }
+            context.setLineWidth(lineWidth);
+
+            context.moveTo(point.startX, point.y);
+            context.lineTo(point.endX, point.y);
+
+            context.stroke();
+
+            let text;
+            let fontSize = 10;
+            if (mark.label.show) {
+                context.setFillStyle(color);
+                if (typeof mark.label.formatter === 'function') {
+                    text = mark.label.formatter();
+                }
+                if (typeof mark.label.formatter === 'string') {
+                    text = mark.label.formatter;
+                }
+
+                if (!text) {
+                    text = mark.yAxis;
+                }
+                context.setFontSize(fontSize);
+                context.fillText(text, point.endX, point.y + (fontSize / 2) - 2);
+            }
+
+            if (mark.showValue === true && mark.yAxis) {
+                let textInfo = context.measureText(mark.yAxis.toString());
+                context.fillText(mark.yAxis, point.startX - textInfo.width - 2, point.y + (fontSize / 2) - 2);
+            }
         }
 
     });

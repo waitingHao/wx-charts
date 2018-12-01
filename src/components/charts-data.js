@@ -450,7 +450,8 @@ export function getDataPoints(data, minRange, maxRange, xAxisPoints, eachSpacing
     return points;
 }
 
-export function getYAxisLines(y, minRange, maxRange, xAxisPoints, eachSpacing, opts, config, process = 1) {
+export function getYAxisLines(y, ranges, xAxisPoints, eachSpacing, opts, config, process = 1) {
+    let {minRange, maxRange} = ranges;
     let startY = calStartY(config, opts);
     // 可用高度
     let validHeight = startY - config.padding;
@@ -462,6 +463,10 @@ export function getYAxisLines(y, minRange, maxRange, xAxisPoints, eachSpacing, o
     let height = validHeight * (y - minRange) / (maxRange - minRange);
     height *= process;
     point.y = startY - Math.round(height);
+    // x轴所在y
+    point.startY = startY;
+    // 最上方的界限
+    point.endY = startY - validHeight;
 
     return point;
 }

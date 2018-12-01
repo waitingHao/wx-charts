@@ -13,15 +13,15 @@ export function drawToolTipSplitLine(offsetX, opts, config, context) {
     context.closePath();
 }
 
-export function drawToolTip(textList, offset, opts, config, context) {
+export function drawToolTip(textList, offsetP, opts, config, context) {
     let legendWidth = 4;
     let legendMarginRight = 5;
     let arrowWidth = 8;
     let isOverRightBorder = false;
-    offset = assign({
+    let offset = assign({
         x: 0,
         y: 0
-    }, offset);
+    }, offsetP);
     offset.y -= 8;
     let textWidth = textList.map((item) => {
         return measureText(item.text);

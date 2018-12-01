@@ -4,7 +4,7 @@ import { measureText, convertCoordinateOrigin, isInAngleRange } from './charts-u
 
 function dataCombine(series) {
     return series.reduce(function(a, b) {
-        let data;
+        let data = null;
         // 数组数据
         if (Array.isArray(b.data)) {
             // 支持扩展类型数据
@@ -67,10 +67,14 @@ export function getRadarCoordinateSeries(length) {
     return CoordinateSeries.map(item => -1 * item + Math.PI / 2);
 }
 
-export function getToolTipData(seriesData, calPoints, index, categories, option = {}) {
+export function getToolTipData(seriesData, calPoints, index, categories, option) {
+    let opts = option;
+    if (!opts) {
+        opts = {};
+    }
     let textList = seriesData.map(item => {
         return {
-            text: option.format ? option.format(item, categories[index]) : `${item.name}: ${item.data}`,
+            text: opts.format ? opts.format(item, categories[index]) : `${item.name}: ${item.data}`,
             color: item.color
         }
     });
@@ -87,17 +91,21 @@ export function getToolTipData(seriesData, calPoints, index, categories, option 
     validCalPoints.forEach(item => {
         offset.x = Math.round(item.x);
         offset.y += item.y;
-    })
+    });
 
     offset.y /= validCalPoints.length;
     return { textList, offset };
 }
 
-export function findCurrentIndex (currentPoints, xAxisPoints, opts, config, offset = 0) {
+export function findCurrentIndex (currentPoints, xAxisPoints, opts, config, offset) {
+    let os = offset;
+    if (!os) {
+        os = 0;
+    }
     let currentIndex = -1;
     if (isInExactChartArea(currentPoints, opts, config)) {
         xAxisPoints.forEach((item, index) => {
-            if (currentPoints.x + offset > item) {
+            if (currentPoints.x + os > item) {
                 currentIndex = index;
             }
         });
@@ -117,26 +125,28 @@ export function isInExactChartArea (currentPoints, opts, config) {
 export function findRadarChartCurrentIndex (currentPoints, radarData, count) {
     let eachAngleArea = 2 * Math.PI / count;
     let currentIndex = -1;
+
+    function fixAngle (angle) {
+        let ag = angle;
+        if (ag < 0) {
+            ag += 2 * Math.PI;
+        }
+        if (ag > 2 * Math.PI) {
+            ag -= 2 * Math.PI;
+        }
+        return ag;
+    }
+
     if (isInExactPieChartArea(currentPoints, radarData.center, radarData.radius)) {
         let angle = Math.atan2(radarData.center.y - currentPoints.y, currentPoints.x - radarData.center.x);
         angle =  -1 * angle;
         if (angle < 0) {
             angle += 2 * Math.PI;
         }
-
-        function fixAngle (angle) {
-            if (angle < 0) {
-                angle += 2 * Math.PI;
-            }
-            if (angle > 2 * Math.PI) {
-                angle -= 2 * Math.PI;
-            }
-            return angle;
-        }
         let angleList = radarData.angleList.map(item => {
-            item = fixAngle(-1 * item);
+            let i = fixAngle(-1 * item);
 
-            return item;
+            return i;
         });
 
         angleList.forEach((item, index) => {
@@ -255,7 +265,7 @@ export function calCategoriesData(categories, opts, config) {
         angle: 0,
         xAxisHeight: config.xAxisHeight
     };
-    let { eachSpacing } = getXAxisPoints(categories, opts, config);
+    let eachSpacing = getXAxisPoints(categories, opts, config).eachSpacing;
 
     // get max length of categories text
     let categoriesTextLenth = categories.map((item) => {
@@ -282,7 +292,11 @@ export function calCategoriesData(categories, opts, config) {
     return result;
 }
 
-export function getRadarDataPoints(angleList, center, radius, series, opts, process = 1 ) {
+export function getRadarDataPoints(angleList, center, radius, series, opts, process ) {
+    let p = process;
+    if (!p) {
+        p = 1;
+    }
     let radarOption = opts.extra.radar || {};
     radarOption.max = radarOption.max || 0;
     let maxData = Math.max(radarOption.max, Math.max.apply(null, dataCombine(series)));
@@ -297,7 +311,7 @@ export function getRadarDataPoints(angleList, center, radius, series, opts, proc
             tmp.angle = angleList[index];
 
             tmp.proportion = item / maxData;
-            tmp.position = convertCoordinateOrigin(radius * tmp.proportion * process * Math.cos(tmp.angle), radius * tmp.proportion * process * Math.sin(tmp.angle), center);
+            tmp.position = convertCoordinateOrigin(radius * tmp.proportion * p * Math.cos(tmp.angle), radius * tmp.proportion * p * Math.sin(tmp.angle), center);
             listItem.data.push(tmp);
         });
 
@@ -307,16 +321,20 @@ export function getRadarDataPoints(angleList, center, radius, series, opts, proc
     return data;
 }
 
-export function getPieDataPoints(series, process = 1) {
-    var count = 0;
-    var _start_ = 0;
+export function getPieDataPoints(series, process) {
+    let p = process;
+    if (!p) {
+        p = 1;
+    }
+    let count = 0;
+    let _start_ = 0;
     series.forEach(function(item) {
         item.data = item.data === null ? 0 : item.data;
         count += item.data;
     });
     series.forEach(function(item) {
         item.data = item.data === null ? 0 : item.data;
-        item._proportion_ = item.data / count * process;
+        item._proportion_ = item.data / count * p;
     });
     series.forEach(function(item) {
         item._start_ = _start_;
@@ -327,9 +345,9 @@ export function getPieDataPoints(series, process = 1) {
 }
 
 export function getPieTextMaxLength(series) {
-    series = getPieDataPoints(series);
+    let sr = getPieDataPoints(series);
     let maxLength = 0;
-    series.forEach((item) => {
+    sr.forEach((item) => {
         let text = item.format ? item.format(+item._proportion_.toFixed(2), item) : `${Util.toFixed(item._proportion_ * 100)}%`;
         maxLength = Math.max(maxLength, measureText(text));
     });
@@ -407,7 +425,8 @@ export function getXAxisPoints(categories, opts, config) {
     return { xAxisPoints, startX, endX, eachSpacing };
 }
 
-export function getDataPoints(data, minRange, maxRange, xAxisPoints, eachSpacing, opts, config, process = 1) {
+export function getDataPoints(data, ranges, xAxisPoints, eachSpacing, opts, config, process = 1) {
+    let {minRange, maxRange} = ranges;
     let points = [];
     // 可用高度
     // let validHeight = opts.height - 2 * config.padding - config.xAxisHeight - config.legendHeight;
@@ -516,10 +535,11 @@ export function calYAxisData(series, opts, config) {
     let ranges = getYAxisTextList(series, opts, config);
     let yAxisWidth = config.yAxisWidth;
     let rangesFormat = ranges.map(function(item) {
-        item = Util.toFixed(item, 2);
-        item = opts.yAxis.format ? opts.yAxis.format(Number(item)) : item;
-        yAxisWidth = Math.max(yAxisWidth, measureText(item) + 5);
-        return item;
+        let i = item;
+        i = Util.toFixed(i, 2);
+        i = opts.yAxis.format ? opts.yAxis.format(Number(i)) : i;
+        yAxisWidth = Math.max(yAxisWidth, measureText(i) + 5);
+        return i;
     });
     if (opts.yAxis.disabled === true || (opts.yAxis && opts.yAxis.axisLabel && opts.yAxis.axisLabel.show === false)) {
         yAxisWidth = 0;

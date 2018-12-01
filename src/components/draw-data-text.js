@@ -59,15 +59,16 @@ export function drawPointText (points, series, config, context) {
 }
 
 export function drawRadarLabel(angleList, radius, centerPosition, opts, config, context) {
-    let radarOption = opts.extra.radar || {};    
-    radius += config.radarLabelTextMargin;
+    let rd = radius;
+    let radarOption = opts.extra.radar || {};
+    rd += config.radarLabelTextMargin;
     context.beginPath();
     context.setFontSize(config.fontSize);
     context.setFillStyle(radarOption.labelColor || '#666666');
     angleList.forEach((angle, index) => {
         let pos = {
-            x: radius * Math.cos(angle),
-            y: radius * Math.sin(angle)
+            x: rd * Math.cos(angle),
+            y: rd * Math.sin(angle)
         }
         let posRelativeCanvas = convertCoordinateOrigin(pos.x, pos.y, centerPosition);
         let startX = posRelativeCanvas.x;
@@ -85,7 +86,7 @@ export function drawRadarLabel(angleList, radius, centerPosition, opts, config, 
 
 export function drawPieText (series, opts, config, context, radius, center) {
     let lineRadius = radius + opts.pieChartLinePadding;
-    let textRadius = lineRadius + opts.pieChartTextPadding;
+    // let textRadius = lineRadius + opts.pieChartTextPadding;
     let textObjectCollection = [];
     let lastTextObject = null;
 

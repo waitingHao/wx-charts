@@ -1,30 +1,32 @@
 import Util from '../util/util'
 
 function findRange (num, type, limit) {
-    if (isNaN(num)) {
+    let nNum = num;
+    if (isNaN(nNum)) {
         throw new Error('[wxCharts] unvalid series data!');
     }
-    limit = limit || 10;
-    type = type ? type : 'upper';
+    let nLimit = limit || 10;
+    let nType = type;
+    nType = nType ? nType : 'upper';
     let multiple = 1;
-    while (limit < 1) {
-        limit *= 10;
+    while (nLimit < 1) {
+        nLimit *= 10;
         multiple *= 10;
     }
-    if (type === 'upper') {
-        num = Math.ceil(num * multiple);
+    if (nType === 'upper') {
+        nNum = Math.ceil(nNum * multiple);
     } else {
-        num = Math.floor(num * multiple);
+        nNum = Math.floor(nNum * multiple);
     }
-    while (num % limit !== 0) {
-        if (type === 'upper') {
-            num++;
+    while (nNum % nLimit !== 0) {
+        if (nType === 'upper') {
+            nNum++;
         } else {
-            num--;
+            nNum--;
         }
     }
 
-    return num / multiple;
+    return nNum / multiple;
 }
 
 export function calValidDistance (distance, chartData, config, opts) {
@@ -42,27 +44,28 @@ export function calValidDistance (distance, chartData, config, opts) {
 
 export function isInAngleRange(angle, startAngle, endAngle) {
     function adjust (angle) {
-        while (angle < 0) {
-            angle += 2 * Math.PI;
+        let nAngle = angle;
+        while (nAngle < 0) {
+            nAngle += 2 * Math.PI;
         }
-        while (angle > 2 * Math.PI) {
-            angle -= 2 * Math.PI;
+        while (nAngle > 2 * Math.PI) {
+            nAngle -= 2 * Math.PI;
         }
 
-        return angle;
+        return nAngle;
     }
 
-    angle = adjust(angle);
-    startAngle = adjust(startAngle);
-    endAngle = adjust(endAngle);
-    if (startAngle > endAngle) {
-        endAngle += 2 * Math.PI;
-        if (angle < startAngle) {        
-            angle += 2 * Math.PI;
+    let nAngle = adjust(angle);
+    let nStartAngle = adjust(startAngle);
+    let nEndAngle = adjust(endAngle);
+    if (nStartAngle > nEndAngle) {
+        nEndAngle += 2 * Math.PI;
+        if (nAngle < nStartAngle) {
+            nAngle += 2 * Math.PI;
         }
     }
 
-    return angle >= startAngle && angle <= endAngle;
+    return nAngle >= nStartAngle && nAngle <= nEndAngle;
 }
 
 export function calRotateTranslate(x, y, h) {
@@ -191,12 +194,17 @@ export function getDataRange (minData, maxData) {
     }
 }
 
-export function measureText (text, fontSize=10) {
+export function measureText (text, fontSize) {
+    let fs = fontSize;
+    if (typeof fs === 'undefined') {
+        fs = 10;
+    }
+
     // wx canvas 未实现measureText方法, 此处自行实现
-    text = String(text);
-    var text = text.split('');
-    var width = 0;
-    text.forEach(function(item) {
+    let nText = String(text);
+    nText = nText.split('');
+    let width = 0;
+    nText.forEach(function(item) {
         if (/[a-zA-Z]/.test(item)) {
             width += 7;
         } else if (/[0-9]/.test(item)) {
@@ -217,5 +225,5 @@ export function measureText (text, fontSize=10) {
             width += 10;
         }
     });
-    return width * fontSize / 10;
+    return width * fs / 10;
 }

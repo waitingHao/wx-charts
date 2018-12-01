@@ -1,10 +1,11 @@
 let util = {
     toFixed: function (num, limit) {
-        limit = limit || 2;
+        let nLimit = limit || 2;
+        let nNum = num;
         if (this.isFloat(num)) {
-            num = num.toFixed(limit);
+            nNum = num.toFixed(nLimit);
         }
-        return num;
+        return nNum;
     },
     isFloat: function (num) {
         return num % 1 !== 0;

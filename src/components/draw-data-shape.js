@@ -55,32 +55,33 @@ export default function drawPointShape (points, color, shape, context) {
  * @param opts.color    填充颜色
  */
 export function drawRect(x, y, width, height, radius, context, opts) {
-    if (!Array.isArray(radius)) {
-        radius = [radius, radius, radius, radius];
+    let r = radius;
+    if (!Array.isArray(r)) {
+        r = [r, r, r, r];
     }
 
 
-    if (!radius || radius.length === 0) {
-        radius = [0,0,0,0];
+    if (!r || r.length === 0) {
+        r = [0,0,0,0];
     }
 
-    switch (radius.length) {
+    switch (r.length) {
         case 1:
-            radius = radius.concat(radius, radius, radius);
+            r = r.concat(r, r, r);
             break;
         case 2:
-            radius = radius.concat(radius);
+            r = r.concat(r);
             break;
         case 3:
-            radius.push(radius[1]);
+            r.push(r[1]);
             break;
     }
 
-    x = Math.round(x);
-    y = Math.round(y);
-    width = Math.round(width);
-    height = Math.round(height);
-    radius = radius.map(r => Math.round(r));
+    let realX = Math.round(x);
+    let realY = Math.round(y);
+    let realWidth = Math.round(width);
+    let realHeight = Math.round(height);
+    r = r.map(r => Math.round(r));
 
     // Android 端arcTo有bug，需要在半径为0时调用lineTo
 
@@ -88,38 +89,38 @@ export function drawRect(x, y, width, height, radius, context, opts) {
     context.setFillStyle(opts.color);
 
     // draw top and top right corner
-    if (radius[0] === 0) {
-        context.moveTo(x, y);
+    if (r[0] === 0) {
+        context.moveTo(realX, realY);
     } else {
-        context.moveTo(x + radius[0], y);
+        context.moveTo(realX + r[0], realY);
     }
 
-    if (radius[1] === 0) {
-        context.lineTo(x + width, y);
+    if (r[1] === 0) {
+        context.lineTo(realX + realWidth, realY);
     } else {
-        context.arcTo(x + width, y, x + width, y + radius[1], radius[1]);
+        context.arcTo(realX + realWidth, realY, realX + realWidth, realY + r[1], r[1]);
     }
 
 
     // draw right side and bottom right corner
-    if (radius[2] === 0) {
-        context.lineTo(x + width, y + height);
+    if (r[2] === 0) {
+        context.lineTo(realX + realWidth, realY + realHeight);
     } else {
-        context.arcTo(x + width, y + height, x + width - radius[2], y + height, radius[2]);
+        context.arcTo(realX + realWidth, realY + realHeight, realX + realWidth - r[2], realY + realHeight, r[2]);
     }
 
     // draw bottom and bottom left corner
-    if (radius[3] === 0) {
-        context.lineTo(x, y + height);
+    if (r[3] === 0) {
+        context.lineTo(realX, realY + realHeight);
     } else {
-        context.arcTo(x, y + height, x, y + height - radius[3], radius[3]);
+        context.arcTo(realX, realY + realHeight, realX, realY + realHeight - r[3], r[3]);
     }
 
     // draw left and top left corner
-    if (radius[0] === 0 ) {
-        context.lineTo(x, y);
+    if (r[0] === 0 ) {
+        context.lineTo(realX, realY);
     } else {
-        context.arcTo(x, y, x + radius[0], y, radius[0]);
+        context.arcTo(realX, realY, realX + r[0], realY, r[0]);
     }
 
     context.fill();

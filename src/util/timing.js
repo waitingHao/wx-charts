@@ -8,10 +8,11 @@ export default {
     },
 
     easeInOut: function(pos){
-        if ( (pos /= 0.5) < 1 ) {
-            return 0.5 * Math.pow(pos, 3);
+        let p = pos;
+        if ( (p /= 0.5) < 1 ) {
+            return 0.5 * Math.pow(p, 3);
         } else {     
-            return 0.5 * (Math.pow((pos - 2), 3) + 2);
+            return 0.5 * (Math.pow((p - 2), 3) + 2);
         }
     },
 

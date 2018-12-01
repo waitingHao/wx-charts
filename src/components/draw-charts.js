@@ -41,7 +41,7 @@ export default function drawCharts (type, opts, config, context) {
                     drawLegend(opts.series, opts, config, context);                   
                     drawYAxis(series, opts, config, context);
                     drawToolTipBridge(opts, config, context, process);
-                    drawCanvas(opts, context);
+                    drawCanvas(opts, context);measureText
                 },
                 onAnimationFinish: () => {
                     this.event.trigger('renderComplete');

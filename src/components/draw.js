@@ -505,8 +505,8 @@ export function drawYAxisGrid(opts, config, context) {
     } else {
       // 关闭网格时，还是要绘画x轴线
       if (points && points.length > 0) {
-        context.moveTo(startX, points[0]);
-        context.lineTo(endX, points[0]);
+        context.moveTo(startX, points[points.length - 1]);
+        context.lineTo(endX, points[points.length - 1]);
       }
     }
     context.closePath();

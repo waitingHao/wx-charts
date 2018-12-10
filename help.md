@@ -81,6 +81,11 @@ opts.yAxis.axisTick.show Boolean default true 是否显示坐标轴刻度。
 
 opts.yAxis.axisLabel.show Boolean default true 是否显示刻度标签。
 opts.yAxis.axisLabel.interval Number 坐标轴刻度标签的显示间隔，在类目轴中有效。默认会采用标签不重叠的策略间隔显示标签。
+opts.yAxis.axisLabel.align String default 'left' 文字水平对齐方式。
+opts.yAxis.axisLabel.width Number 文字块的宽度。一般不用指定，不指定则自动是文字的宽度。
+
+opts.yAxis.axisLine Object 坐标轴轴线相关设置。
+opts.yAxis.axisLine.show Boolean 是否显示坐标轴轴线。 [ default: true ]
 
 opts.extra Object 其他非通用配置项
 

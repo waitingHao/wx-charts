@@ -43,9 +43,16 @@ Charts.prototype.updateData = function (data = {}) {
 
     this.opts.title = assign({}, this.opts.title, data.title || {});
     this.opts.subtitle = assign({}, this.opts.subtitle, data.subtitle || {});
+    this.opts.extra = assign({}, this.opts.extra, data.extra || {});
+
+    this.opts.yAxis = assign({}, this.opts.yAxis, data.yAxis || {});
+    // yAxis有配置缓存，配置改变后清除
+    delete this.opts.yAxis._eachRange;
+    delete this.opts.yAxis._yAxisSplit;
+    delete this.opts.yAxis._minRange;
 
     drawCharts.call(this, this.opts.type, this.opts, this.config, this.context);
-}
+};
 
 Charts.prototype.stopAnimation = function () {
     this.animationInstance && this.animationInstance.stop();

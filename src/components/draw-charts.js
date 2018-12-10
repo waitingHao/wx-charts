@@ -1,6 +1,20 @@
-import { drawYAxisGrid, drawToolTipBridge, drawRadarDataPoints, drawCanvas, drawLegend, drawPieDataPoints, drawLineDataPoints, drawAreaDataPoints, drawColumnDataPoints, drawYAxis, drawXAxis, drawMarkLine, drawLineArea } from './draw'
-import { calYAxisData, getPieTextMaxLength, calCategoriesData, calLegendData } from './charts-data'
-import { fillSeriesColor } from './charts-util';
+import {
+    drawAreaDataPoints,
+    drawCanvas,
+    drawColumnDataPoints,
+    drawLegend,
+    drawLineArea,
+    drawLineDataPoints,
+    drawMarkLine,
+    drawPieDataPoints,
+    drawRadarDataPoints,
+    drawToolTipBridge,
+    drawXAxis,
+    drawYAxis,
+    drawYAxisGrid
+} from './draw'
+import {calCategoriesData, calLegendData, calYAxisData, getPieTextMaxLength} from './charts-data'
+import {fillSeriesColor} from './charts-util';
 import Animation from './animation'
 
 export default function drawCharts (type, opts, config, context) {
@@ -41,7 +55,7 @@ export default function drawCharts (type, opts, config, context) {
                     drawLegend(opts.series, opts, config, context);                   
                     drawYAxis(series, opts, config, context);
                     drawToolTipBridge(opts, config, context, process);
-                    drawCanvas(opts, context);measureText
+                    drawCanvas(opts, context);
                 },
                 onAnimationFinish: () => {
                     this.event.trigger('renderComplete');
@@ -54,7 +68,8 @@ export default function drawCharts (type, opts, config, context) {
                 duration: duration,
                 onProcess: (process) => {
                     // calYAxisDataInterval(series, opts, config);
-                    drawYAxisGrid(opts, config, context);                    
+                    drawYAxisGrid(opts, config, context);
+                    drawMarkLine(series, opts, config, context);
                     let { xAxisPoints, eachSpacing } = drawColumnDataPoints(series, opts, config, context, process);
                     this.chartData.xAxisPoints = xAxisPoints;
                     this.chartData.eachSpacing = eachSpacing;

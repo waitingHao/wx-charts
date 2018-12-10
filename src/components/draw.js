@@ -11,6 +11,7 @@ import {
     getRadarDataPoints,
     getXAxisPoints,
     getYAxisLines,
+    getYAxisSplit,
     splitPoints
 } from './charts-data'
 import {calRotateTranslate, convertCoordinateOrigin, createCurveControlPoints, measureText} from './charts-util'
@@ -62,7 +63,8 @@ export function drawColumnDataPoints(series, opts, config, context, process = 1)
                 }
                 let halfWidth = width / 2;
                 item.barBorderRadius = item.barBorderRadius.map(r => Math.min(halfWidth, r));
-                drawRect(startX, item.y, width, height, item.barBorderRadius, context, {
+                // 高度减1，防止覆盖x轴
+                drawRect(startX, item.y, width, height - 1, item.barBorderRadius, context, {
                     color: item.color || eachSeries.color
                 });
             }
@@ -462,6 +464,8 @@ export function drawMarkLine(series, opts, config, context) {
             }
 
             if (mark.showValue === true && mark.yAxis) {
+                context.setFillStyle(mark.valueColor || color);
+                context.setFontSize(fontSize);
                 let textInfo = context.measureText(mark.yAxis.toString());
                 context.fillText(mark.yAxis, point.startX - textInfo.width - 2, point.y + (fontSize / 2) - 2);
             }
@@ -482,35 +486,45 @@ export function drawMarkLine(series, opts, config, context) {
 export function drawYAxisGrid(opts, config, context) {
     // let spacingValid = opts.height - 2 * config.padding - config.xAxisHeight - config.legendHeight;
     let spacingValid = calStartY(config, opts) - config.padding;
-    let eachSpacing = Math.floor(spacingValid / config.yAxisSplit);
+
+    let {yAxisSplit} = getYAxisSplit(null, opts, config);
+    let eachSpacing = (spacingValid / yAxisSplit);
     // let yAxisTotalWidth = config.yAxisWidth + config.yAxisTitleWidth;
     // let startX = config.padding + yAxisTotalWidth;
     let startX = calStartX(config, opts);
     let endX = opts.width - config.padding;
 
     let points = [];
-    for (let i = 0; i < config.yAxisSplit; i++) {
-        points.push(config.padding + eachSpacing * i);
+    for (let i = 0; i < yAxisSplit; i++) {
+        points.push(Math.floor(config.padding + eachSpacing * i));
     }
-    points.push(config.padding + eachSpacing * config.yAxisSplit + 2);
+    points.push(Math.floor(config.padding + eachSpacing * yAxisSplit));
 
-    context.beginPath();
-    context.setStrokeStyle(opts.yAxis.gridColor || "#cccccc")
+    context.setStrokeStyle(opts.yAxis.gridColor || "#cccccc");
     context.setLineWidth(1);
     if (opts.yAxis.disableGrid !== true) {
-        points.forEach(function (item, index) {
+        context.beginPath();
+        // 设置风格类型
+        if (opts.yAxis.gridLineStyle && opts.yAxis.gridLineStyle.type === 'dashed') {
+            context.setLineDash([2, 1]);
+        }
+
+        // 绘画网格，最后一条为x轴，不在此绘画
+        for (let i = 0; i < points.length - 1; i++) {
+            let item = points[i];
             context.moveTo(startX, item);
             context.lineTo(endX, item);
-        });
-    } else {
-      // 关闭网格时，还是要绘画x轴线
-      if (points && points.length > 0) {
+        }
+        context.stroke();
+        context.setLineDash(null);
+    }
+    // 关闭网格时，还是要绘画x轴线
+    if (points && points.length > 0) {
+        context.beginPath();
         context.moveTo(startX, points[points.length - 1]);
         context.lineTo(endX, points[points.length - 1]);
-      }
+        context.stroke();
     }
-    context.closePath();
-    context.stroke();
 }
 
 export function drawYAxis(series, opts, config, context) {
@@ -527,11 +541,13 @@ export function drawYAxis(series, opts, config, context) {
     let startY = config.padding;
     let endY = calStartY(config, opts);
 
-    context.beginPath();
-    context.setStrokeStyle(opts.xAxis.gridColor || "#cccccc");
-    context.moveTo(startX, startY);
-    context.lineTo(startX, endY);
-    context.stroke();
+    if (!opts.yAxis.axisLine || opts.yAxis.axisLine.show !== false) {
+        context.beginPath();
+        context.setStrokeStyle(opts.xAxis.gridColor || "#cccccc");
+        context.moveTo(startX, startY);
+        context.lineTo(startX, endY);
+        context.stroke();
+    }
 
     if (opts.yAxis && opts.yAxis.axisLabel && opts.yAxis.axisLabel.show === false) {
         return;
@@ -541,7 +557,9 @@ export function drawYAxis(series, opts, config, context) {
     let {rangesFormat} = calYAxisData(series, opts, config);
 
     let spacingValid = calStartY(config, opts) - config.padding;
-    let eachSpacing = Math.floor(spacingValid / config.yAxisSplit);
+
+    let {yAxisSplit} = getYAxisSplit(series, opts, config);
+    let eachSpacing = (spacingValid / yAxisSplit);
 
 
     // set YAxis background
@@ -552,17 +570,24 @@ export function drawYAxis(series, opts, config, context) {
     context.fillRect(endX, 0, opts.width, endY + config.xAxisHeight + 5);
 
     let points = [];
-    for (let i = 0; i <= config.yAxisSplit; i++) {
-        points.push(config.padding + eachSpacing * i);
+    for (let i = 0; i <= yAxisSplit; i++) {
+        points.push(Math.floor(config.padding + eachSpacing * i));
     }
 
     context.stroke();
     context.beginPath();
     context.setFontSize(config.fontSize);
     context.setFillStyle(opts.yAxis.fontColor || '#666666')
+
+    let textX = config.padding + config.yAxisTitleWidth;
+    if (opts.yAxis.axisLabel && opts.yAxis.axisLabel.align) {
+        textX = startX - 5;
+        context.setTextAlign(opts.yAxis.axisLabel.align);
+    }
+
     rangesFormat.forEach(function (item, index) {
         let pos = points[index] ? points[index] : endY;
-        context.fillText(item, config.padding + config.yAxisTitleWidth, pos + config.fontSize / 2);
+        context.fillText(item, textX, pos + config.fontSize / 2 - 1);
     });
     context.closePath();
     context.stroke();

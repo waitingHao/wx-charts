@@ -382,7 +382,16 @@ export function fixColumeData(points, eachSpacing, columnLen, index, config, opt
 }
 
 export function calStartX(config, opts) {
-    let yAxisTotalWidth = config.yAxisWidth + config.yAxisTitleWidth;
+    let yAxisTotalWidth;
+    if (opts.yAxis.axisLabel && opts.yAxis.axisLabel.width) {
+        yAxisTotalWidth = opts.yAxis.axisLabel.width;
+    } else {
+        yAxisTotalWidth = config.yAxisWidth;
+    }
+
+    if (opts.yAxis.title) {
+        yAxisTotalWidth += config.yAxisTitleWidth;
+    }
     let startX = config.padding + yAxisTotalWidth;
 
     if (opts && opts.grid) {
@@ -423,6 +432,70 @@ export function getXAxisPoints(categories, opts, config) {
     }
 
     return { xAxisPoints, startX, endX, eachSpacing };
+}
+
+/**
+ * 计算y轴刻度间隔
+ *
+ * @param series
+ * @param opts
+ * @param config
+ * @returns {*}
+ */
+export function getYAxisSplit(series, opts, config) {
+
+    if (opts.yAxis._eachRange && opts.yAxis._lastInterval === opts.yAxis.interval) {
+        return {
+            eachRange: opts.yAxis._eachRange,
+            yAxisSplit: opts.yAxis._yAxisSplit,
+            minRange: opts.yAxis._minRange
+        };
+    }
+
+    let data = dataCombine(series);
+    // remove null from data
+    data = data.filter((item) => {
+        return item !== null;
+    });
+    let minData = Math.min.apply(this, data);
+    let maxData = Math.max.apply(this, data);
+    if (data.length === 0) {
+        minData = maxData = 0;
+    }
+
+    if (typeof opts.yAxis.min === 'number') {
+        minData = Math.min(opts.yAxis.min, minData);
+    }
+    if (typeof opts.yAxis.max === 'number') {
+        maxData = Math.max(opts.yAxis.max, maxData);
+    }
+
+    // fix issue https://github.com/xiaolin3303/wx-charts/issues/9
+    if (minData === maxData) {
+        let rangeSpan = maxData || 1;
+        minData -= rangeSpan;
+        maxData += rangeSpan;
+    }
+    let dataRange = getDataRange(minData, maxData);
+    let minRange = dataRange.minRange;
+    let maxRange = dataRange.maxRange;
+
+
+    let yAxisSplit = config.yAxisSplit;
+    if (opts.yAxis.interval) {
+        yAxisSplit = Math.ceil((maxRange - minRange) / opts.yAxis.interval);
+    }
+    opts.yAxis._lastInterval = opts.yAxis.interval;
+
+    opts.yAxis._eachRange = (maxRange - minRange) / yAxisSplit;
+    opts.yAxis._yAxisSplit = yAxisSplit;
+    opts.yAxis._minRange = minRange;
+
+    return {
+        eachRange: opts.yAxis._eachRange,
+        yAxisSplit: opts.yAxis._yAxisSplit,
+        minRange: opts.yAxis._minRange
+    };
 }
 
 export function getDataPoints(data, ranges, xAxisPoints, eachSpacing, opts, config, process = 1) {
@@ -491,40 +564,9 @@ export function getYAxisLines(y, ranges, xAxisPoints, eachSpacing, opts, config,
 }
 
 export function getYAxisTextList(series, opts, config) {
-    let data = dataCombine(series);
-    // remove null from data
-    data = data.filter((item) => {
-        return item !== null;
-    });
-    let minData = Math.min.apply(this, data);
-    let maxData = Math.max.apply(this, data);
-    if (data.length === 0)
-    {
-        minData = maxData = 0;
-    }
-
-    if (typeof opts.yAxis.min === 'number') {
-        minData = Math.min(opts.yAxis.min, minData);
-    }
-    if (typeof opts.yAxis.max === 'number') {
-        maxData = Math.max(opts.yAxis.max, maxData);
-    }
-
-    // fix issue https://github.com/xiaolin3303/wx-charts/issues/9
-    if (minData === maxData) {
-        let rangeSpan = maxData || 1;
-        minData -= rangeSpan;
-        maxData += rangeSpan;
-    }
-
-    let dataRange = getDataRange(minData, maxData);
-    let minRange = dataRange.minRange;
-    let maxRange = dataRange.maxRange;
-
+    let {eachRange, yAxisSplit, minRange} = getYAxisSplit(series, opts, config);
     let range = [];
-    let eachRange = (maxRange - minRange) / config.yAxisSplit;
-
-    for (var i = 0; i <= config.yAxisSplit; i++) {
+    for (let i = 0; i <= yAxisSplit; i++) {
         range.push(minRange + eachRange * i);
     }
     return range.reverse();
@@ -541,6 +583,12 @@ export function calYAxisData(series, opts, config) {
         yAxisWidth = Math.max(yAxisWidth, measureText(i) + 5);
         return i;
     });
+
+    // 如果设置了固定的刻度标签宽度，取设置值，不取计算值
+    if (opts.yAxis.axisLabel && opts.yAxis.axisLabel.width) {
+        yAxisWidth = opts.yAxis.axisLabel.width;
+    }
+
     if (opts.yAxis.disabled === true || (opts.yAxis && opts.yAxis.axisLabel && opts.yAxis.axisLabel.show === false)) {
         yAxisWidth = 0;
     }

@@ -122,8 +122,8 @@ export function isInExactChartArea (currentPoints, opts, config) {
     return currentPoints.x < opts.width - config.padding
         // && currentPoints.x > config.padding + config.yAxisWidth + config.yAxisTitleWidth
         && currentPoints.x > calStartX(config, opts)
-        && currentPoints.y > config.padding
-        && currentPoints.y < opts.height - config.legendHeight - config.xAxisHeight - config.padding
+        && currentPoints.y > calEndY(config, opts)
+        && currentPoints.y < opts.height - config.legendHeight - config.xAxisHeight - config.padding// calStartY
 }
 
 export function findRadarChartCurrentIndex (currentPoints, radarData, count) {
@@ -417,6 +417,15 @@ export function calStartY(config, opts) {
     return startY;
 }
 
+export function calEndY(config, opts) {
+    let endY = config.padding;
+    if (opts && opts.grid) {
+        if (opts.grid.top) {
+            endY += opts.grid.top;
+        }
+    }
+    return endY;
+}
 export function getXAxisPoints(categories, opts, config) {
     let startX = calStartX(config, opts);
     let spacingValid = opts.width - config.padding - startX;
@@ -507,7 +516,7 @@ export function getDataPoints(data, ranges, xAxisPoints, eachSpacing, opts, conf
     let points = [];
     // 可用高度
     // let validHeight = opts.height - 2 * config.padding - config.xAxisHeight - config.legendHeight;
-    let validHeight = calStartY(config, opts) - config.padding;
+    let validHeight = calStartY(config, opts) - calEndY(config, opts);
     data.forEach(function(item, index) {
         let value = null;
         let color = null;
@@ -550,7 +559,7 @@ export function getYAxisLines(y, ranges, xAxisPoints, eachSpacing, opts, config,
     let {minRange, maxRange} = ranges;
     let startY = calStartY(config, opts);
     // 可用高度
-    let validHeight = startY - config.padding;
+    let validHeight = startY - calEndY(config, opts);
 
     let point = {};
     point.startX = xAxisPoints[0];

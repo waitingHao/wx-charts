@@ -1,12 +1,13 @@
 import {measureFormulaText} from './charts-util'
 import { assign } from '../util/polyfill/index';
 import {drawRect} from './draw-data-shape'
-import {calStartY} from './charts-data'
+import {calStartY, calEndY} from './charts-data'
 import {fillFormulaText} from './draw-data-text'
 
 export function drawToolTipSplitLine(offsetX, opts, config, context) {
-    let startY = config.padding;
-    let endY = opts.height - config.padding - config.xAxisHeight - config.legendHeight;
+    let startY = calEndY(config, opts);
+    // let endY = opts.height - config.padding - config.xAxisHeight - config.legendHeight;
+    let endY = calStartY(config, opts);
     context.beginPath();
     context.setStrokeStyle('#cccccc');
     context.setLineWidth(1);
@@ -52,7 +53,7 @@ export function drawToolTip(textList, offsetP, opts, config, context) {
     }
 
     let startY = calStartY(config, opts);
-    let endY = config.padding;
+    let endY = calEndY(config, opts);
 
     // 创建位置对象
     let tooltipPosition = {

@@ -55,6 +55,11 @@ opts.xAxis.disableGrid Boolean default false 不绘制X轴网格
 
 opts.xAxis.type String 可选值calibration(刻度) 默认为包含样式
 
+opts.xAxis.name String 坐标轴名称。
+opts.xAxis.nameTextStyle Object 坐标轴名称的文字样式。
+opts.xAxis.nameTextStyle.color String 坐标轴名称的颜色。
+opts.xAxis.nameTextStyle.fontSize Number 坐标轴名称文字的字体大小。
+
 opts.yAxis Object Y轴配置
 
 opts.yAxis.format Function 自定义Y轴文案显示
@@ -66,6 +71,10 @@ opts.yAxis.max Number Y轴终止值
 opts.yAxis.interval Number Y轴刻度间隔
 
 opts.yAxis.title String Y轴title
+opts.yAxis.name String 坐标轴名称。
+opts.yAxis.nameTextStyle Object 坐标轴名称的文字样式。
+opts.yAxis.nameTextStyle.color String 坐标轴名称的颜色。
+opts.yAxis.nameTextStyle.fontSize Number 坐标轴名称文字的字体大小。
 
 opts.yAxis.gridColor String 例如#7cb5ec default #cccccc Y轴网格颜色
 
@@ -123,6 +132,7 @@ opts.extra.markLine.data.label 该数据项标签的样式，起点和终点项�
 opts.extra.markLine.data.label.show 是否显示标签。
 opts.extra.markLine.data.label.formatter 标签内容格式器，支持字符串模板和回调函数两种形式，字符串模板与回调函数返回的字符串均支持用 \n 换行。
 opts.extra.markLine.data.label.showValue 是否在左侧显示标注线值
+opts.extra.markLine.data.label.valueColor 标注线值颜色
 
 opts.series Array required 数据列表
 

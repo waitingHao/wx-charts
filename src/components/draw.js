@@ -2,6 +2,7 @@ import {
     calLegendData,
     calStartX,
     calStartY,
+    calEndY,
     calYAxisData,
     fixColumeData,
     getDataPoints,
@@ -490,7 +491,9 @@ export function drawMarkLine(series, opts, config, context) {
 
 export function drawYAxisGrid(opts, config, context) {
     // let spacingValid = opts.height - 2 * config.padding - config.xAxisHeight - config.legendHeight;
-    let spacingValid = calStartY(config, opts) - config.padding;
+    let endY = calEndY(config, opts);
+    let startY = calStartY(config, opts);
+    let spacingValid = startY - endY;
 
     let {yAxisSplit} = getYAxisSplit(null, opts, config);
     let eachSpacing = (spacingValid / yAxisSplit);
@@ -499,11 +502,12 @@ export function drawYAxisGrid(opts, config, context) {
     let startX = calStartX(config, opts);
     let endX = opts.width - config.padding;
 
+    // 网格坐标
     let points = [];
     for (let i = 0; i < yAxisSplit; i++) {
-        points.push(Math.floor(config.padding + eachSpacing * i));
+        points.push(Math.floor(endY + eachSpacing * i));
     }
-    points.push(Math.floor(config.padding + eachSpacing * yAxisSplit));
+    points.push(Math.floor(endY + eachSpacing * yAxisSplit));
 
     context.setStrokeStyle(opts.yAxis.gridColor || "#cccccc");
     context.setLineWidth(1);
@@ -523,12 +527,32 @@ export function drawYAxisGrid(opts, config, context) {
         context.stroke();
         context.setLineDash(null);
     }
-    // 关闭网格时，还是要绘画x轴线
+    // 关闭网格时，还是要绘画x轴线 TODO 要移到绘制x轴方法
     if (points && points.length > 0) {
         context.beginPath();
         context.moveTo(startX, points[points.length - 1]);
         context.lineTo(endX, points[points.length - 1]);
         context.stroke();
+    }
+
+    if (opts.xAxis.name) {
+        // context.beginPath();
+        let fontSize = config.fontSize;
+        context.setFillStyle(opts.xAxis.fontColor || '#666666');
+
+        if (opts.xAxis.nameTextStyle) {
+            if (opts.xAxis.nameTextStyle.color) {
+                context.setFillStyle(opts.xAxis.nameTextStyle.color);
+            }
+            if (opts.xAxis.nameTextStyle.fontSize) {
+                fontSize = opts.xAxis.nameTextStyle.fontSize;
+            }
+        }
+        context.setFontSize(fontSize);
+        context.setTextAlign('left');
+        context.fillText(opts.xAxis.name, endX, startY + fontSize + 2);
+        // context.closePath();
+        // context.stroke();
     }
 }
 
@@ -543,15 +567,35 @@ export function drawYAxis(series, opts, config, context) {
 
 
     let endX = opts.width - config.padding;
-    let startY = config.padding;
-    let endY = calStartY(config, opts);
+    let endY = calEndY(config, opts);
+    let startY = calStartY(config, opts);
 
     if (!opts.yAxis.axisLine || opts.yAxis.axisLine.show !== false) {
         context.beginPath();
         context.setStrokeStyle(opts.xAxis.gridColor || "#cccccc");
-        context.moveTo(startX, startY);
-        context.lineTo(startX, endY);
+        context.moveTo(startX, endY);
+        context.lineTo(startX, startY);
         context.stroke();
+    }
+
+    if (opts.yAxis.name) {
+        // context.beginPath();
+        let fontSize = config.fontSize;
+        context.setFillStyle(opts.yAxis.fontColor || '#666666');
+
+        if (opts.yAxis.nameTextStyle) {
+            if (opts.yAxis.nameTextStyle.color) {
+                context.setFillStyle(opts.yAxis.nameTextStyle.color);
+            }
+            if (opts.yAxis.nameTextStyle.fontSize) {
+                fontSize = opts.yAxis.nameTextStyle.fontSize;
+            }
+        }
+        context.setFontSize(fontSize);
+        context.setTextAlign('right');
+        context.fillText(opts.yAxis.name, startX - 2, endY - fontSize);
+        // context.closePath();
+        // context.stroke();
     }
 
     if (opts.yAxis && opts.yAxis.axisLabel && opts.yAxis.axisLabel.show === false) {
@@ -561,7 +605,7 @@ export function drawYAxis(series, opts, config, context) {
 
     let {rangesFormat} = calYAxisData(series, opts, config);
 
-    let spacingValid = calStartY(config, opts) - config.padding;
+    let spacingValid = startY - endY;
 
     let {yAxisSplit} = getYAxisSplit(series, opts, config);
     let eachSpacing = (spacingValid / yAxisSplit);
@@ -570,13 +614,13 @@ export function drawYAxis(series, opts, config, context) {
     // set YAxis background
     context.setFillStyle(opts.background || '#ffffff');
     if (opts._scrollDistance_ < 0) {
-        context.fillRect(0, 0, startX, endY + config.xAxisHeight + 5);
+        context.fillRect(0, 0, startX, startY + config.xAxisHeight + 5);
     }
-    context.fillRect(endX, 0, opts.width, endY + config.xAxisHeight + 5);
+    context.fillRect(endX, 0, opts.width, startY + config.xAxisHeight + 5);
 
     let points = [];
     for (let i = 0; i <= yAxisSplit; i++) {
-        points.push(Math.floor(config.padding + eachSpacing * i));
+        points.push(Math.floor(endY + eachSpacing * i));
     }
 
     context.stroke();
@@ -591,7 +635,7 @@ export function drawYAxis(series, opts, config, context) {
     }
 
     rangesFormat.forEach(function (item, index) {
-        let pos = points[index] ? points[index] : endY;
+        let pos = points[index] ? points[index] : startY;
         context.fillText(item, textX, pos + config.fontSize / 2 - 1);
     });
     context.closePath();
@@ -625,6 +669,7 @@ export function drawLegend(series, opts, config, context) {
             width += 3 * padding + measureText(item.name, config.fontSize, context) + shapeWidth;
         });
         let startX = (opts.width - width) / 2 + padding;
+        // TODO grid.bottom
         let startY = opts.height - config.padding - config.legendHeight + listIndex * (config.fontSize + marginTop) + padding + marginTop;
 
         itemList.forEach(function (item) {

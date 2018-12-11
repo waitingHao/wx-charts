@@ -194,7 +194,20 @@ export function getDataRange (minData, maxData) {
     }
 }
 
-export function measureText (text, fontSize) {
+export function measureMaxText(context, text) {
+    let widths = text.map(t => {
+        return context.measureText(t.toString()).width;
+    });
+
+    return Math.max.apply(null, widths);
+}
+
+export function measureText(text, fontSize, context) {
+    if (context && context.measureText) {
+        let metrics = context.measureText(String(text));
+        return metrics.width;
+    }
+
     let fs = fontSize;
     if (typeof fs === 'undefined') {
         fs = 10;
@@ -226,4 +239,56 @@ export function measureText (text, fontSize) {
         }
     });
     return width * fs / 10;
+}
+
+/**
+ * 带公式字符串宽度缓存，如果有动画或者需要大量重绘时用缓存减少测量耗时
+ */
+const FORMULA_TEXT_WIDTH_CACHE = {};
+
+/**
+ * 测量带下标的字符串
+ *
+ * @param text
+ * @param fontSize
+ * @param context
+ * @returns {*}
+ */
+export function measureFormulaText(text, fontSize, context) {
+    if (FORMULA_TEXT_WIDTH_CACHE[text]) {
+        return FORMULA_TEXT_WIDTH_CACHE[text];
+    }
+
+    context.setFontSize(fontSize);
+    let texts = text.split('_');
+    let sizes = [];
+    texts.forEach((t, i) => {
+        if (i === 0) {
+            sizes.push({
+                text: t,
+                width: context.measureText(t).width
+            });
+            return;
+        }
+        // 下标字体大小
+        context.setFontSize(fontSize * 2 / 3);
+        sizes.push({
+            text: t.substr(0, 1),
+            width: context.measureText(t.substr(0, 1)).width,
+            type: 'sub'
+        });
+
+        if (t.length === 1) {
+            return;
+        }
+
+        context.setFontSize(fontSize);
+        sizes.push({
+            text: t.substr(1),
+            width: context.measureText(t.substr(1)).width
+        });
+    });
+
+    FORMULA_TEXT_WIDTH_CACHE[text] = sizes;
+    return sizes;
 }

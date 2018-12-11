@@ -32,7 +32,7 @@ export function getSeriesDataItem(series, index) {
             if (item.format) {
                 seriesItem.data = item.format(itemData, item);
             } else {
-                if (typeof itemData === 'object' && itemData.value) {
+                if (typeof itemData === 'object') {
                     seriesItem.data = itemData.value;
                 } else {
                     itemData.value = itemData;
@@ -92,6 +92,10 @@ export function getToolTipData(seriesData, calPoints, index, categories, option)
         offset.x = Math.round(item.x);
         offset.y += item.y;
     });
+
+    if (validCalPoints.length === 0) {
+        return {};
+    }
 
     offset.y /= validCalPoints.length;
     return { textList, offset };

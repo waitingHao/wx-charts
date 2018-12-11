@@ -70,12 +70,14 @@ export default function drawCharts (type, opts, config, context) {
                     // calYAxisDataInterval(series, opts, config);
                     drawYAxisGrid(opts, config, context);
                     drawMarkLine(series, opts, config, context);
-                    let { xAxisPoints, eachSpacing } = drawColumnDataPoints(series, opts, config, context, process);
+                    let {xAxisPoints, calPoints, eachSpacing} = drawColumnDataPoints(series, opts, config, context, process);
                     this.chartData.xAxisPoints = xAxisPoints;
+                    this.chartData.calPoints = calPoints;
                     this.chartData.eachSpacing = eachSpacing;
                     drawXAxis(categories, opts, config, context);
                     drawLegend(opts.series, opts, config, context);                    
                     drawYAxis(series, opts, config, context);
+                    drawToolTipBridge(opts, config, context, process);
                     drawCanvas(opts, context);
                 },
                 onAnimationFinish: () => {

@@ -45,15 +45,19 @@ export function drawColumnDataPoints(series, opts, config, context, process = 1)
         context.translate(opts._scrollDistance_, 0);
     }
 
+    let calPoints = [];
     series.forEach(function (eachSeries, seriesIndex) {
         let data = eachSeries.data;
         let points = getDataPoints(data, {minRange, maxRange}, xAxisPoints, eachSpacing, opts, config, process);
         points = fixColumeData(points, eachSpacing, series.length, seriesIndex, config, opts);
+        calPoints.push(points);
 
         // 绘制柱状数据图 TODO 性能优化
         points.forEach(function (item, index) {
             if (item !== null) {
-                let startX = item.x - item.width / 2 + 1;
+                // item.x先round以对齐tooltip指示器标线，因为tooltip的指示器是需要Math.round(item.x)，
+                // 如果先求bar的x再round，会有部分不对齐
+                let startX = Math.round(item.x) - item.width / 2 + 1;
                 // let height = opts.height - item.y - config.padding - config.xAxisHeight - config.legendHeight;
                 let height = endY - item.y;
                 // 添加圆角矩形支持
@@ -81,6 +85,7 @@ export function drawColumnDataPoints(series, opts, config, context, process = 1)
     context.restore();
     return {
         xAxisPoints,
+        calPoints,
         eachSpacing
     }
 }
@@ -591,6 +596,8 @@ export function drawYAxis(series, opts, config, context) {
     });
     context.closePath();
     context.stroke();
+    // 恢复默认
+    context.setTextAlign('left');
 
     if (opts.yAxis.title) {
         drawYAxisTitle(opts.yAxis.title, opts, config, context);

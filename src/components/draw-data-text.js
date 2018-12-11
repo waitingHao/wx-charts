@@ -183,3 +183,32 @@ export function drawPieText (series, opts, config, context, radius, center) {
         context.closePath();
     });
 }
+
+/**
+ * 绘制带下标的文本
+ *
+ * @param texts 由measureFormulaText计算得到的字符结果
+ * @param x
+ * @param y
+ * @param fontSize
+ * @param context
+ */
+export function fillFormulaText(texts, x, y, fontSize, context) {
+    let leftOffset = 0;
+    texts.forEach((t, i) => {
+        if (i === 0) {
+            context.setFontSize(fontSize);
+            context.fillText(t.text, x + leftOffset, y);
+            leftOffset += t.width;
+        } else {
+            if (t.type === 'sub') {
+                context.setFontSize(fontSize * 2 / 3);
+            } else {
+                context.setFontSize(fontSize);
+            }
+
+            context.fillText(t.text, x + leftOffset, y);
+            leftOffset += t.width;
+        }
+    });
+}

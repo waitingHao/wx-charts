@@ -618,15 +618,15 @@ export function drawLegend(series, opts, config, context) {
     let marginTop = 8;
     let shapeWidth = 15;
     legendList.forEach((itemList, listIndex) => {
+        context.setFontSize(config.fontSize);
         let width = 0;
         itemList.forEach(function (item) {
             item.name = item.name || 'undefined';
-            width += 3 * padding + measureText(item.name) + shapeWidth;
+            width += 3 * padding + measureText(item.name, config.fontSize, context) + shapeWidth;
         });
         let startX = (opts.width - width) / 2 + padding;
         let startY = opts.height - config.padding - config.legendHeight + listIndex * (config.fontSize + marginTop) + padding + marginTop;
 
-        context.setFontSize(config.fontSize);
         itemList.forEach(function (item) {
             switch (opts.type) {
                 case 'line':
@@ -670,7 +670,7 @@ export function drawLegend(series, opts, config, context) {
             context.fillText(item.name, startX, startY + 9);
             context.closePath();
             context.stroke();
-            startX += measureText(item.name) + 2 * padding;
+            startX += measureText(item.name, config.fontSize, context) + 2 * padding;
         });
     });
 }

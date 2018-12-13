@@ -185,7 +185,7 @@ export function drawPieText (series, opts, config, context, radius, center) {
 }
 
 /**
- * 绘制带下标的文本
+ * 绘制带上下标的文本
  *
  * @param texts 由measureFormulaText计算得到的字符结果
  * @param x
@@ -195,20 +195,25 @@ export function drawPieText (series, opts, config, context, radius, center) {
  */
 export function fillFormulaText(texts, x, y, fontSize, context) {
     let leftOffset = 0;
-    texts.forEach((t, i) => {
-        if (i === 0) {
-            context.setFontSize(fontSize);
-            context.fillText(t.text, x + leftOffset, y);
-            leftOffset += t.width;
-        } else {
-            if (t.type === 'sub') {
+    let topOffset = 0;
+    texts.forEach((t) => {
+        switch (t.type) {
+            case 'sub':
                 context.setFontSize(fontSize * 2 / 3);
-            } else {
+                context.setTextBaseline('middle');
+                topOffset = 0;
+                break;
+            case 'sup':
+                context.setFontSize(fontSize * 2 / 3);
+                context.setTextBaseline('bottom');
+                topOffset = -(fontSize * 2 / 9);
+                break;
+            default:
                 context.setFontSize(fontSize);
-            }
-
-            context.fillText(t.text, x + leftOffset, y);
-            leftOffset += t.width;
+                context.setTextBaseline('normal');
+                topOffset = 0;
         }
+        context.fillText(t.text, x + leftOffset, y + topOffset);
+        leftOffset += t.width;
     });
 }

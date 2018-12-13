@@ -33,19 +33,27 @@ export function drawToolTip(textList, offsetP, opts, config, context) {
     }, offsetP);
     offset.y -= 8;
     let formulaTextWidths = [];
+    let lineNu = 0;
     let textWidth = textList.map((item) => {
         // 支持公式的文本宽度测量
-        let fontSizes = measureFormulaText(item.text, config.fontSize, context);
-        formulaTextWidths.push(fontSizes);
+        let textLines = item.text.split('\n');
         let width = 0;
-        fontSizes.forEach(t => {
-            width += t.width;
+        textLines.forEach(t => {
+            let w = 0;
+            let fontSizes = measureFormulaText(t, config.fontSize, context);
+            formulaTextWidths.push(fontSizes);
+            fontSizes.forEach(t => {
+                w += t.width;
+            });
+            width = Math.max(width, w);
+            lineNu++;
         });
+
         return width;
     });
 
     let toolTipWidth = legendWidth + legendMarginRight + 4 * config.toolTipPadding + Math.max.apply(null, textWidth);
-    let toolTipHeight = 2 * config.toolTipPadding + textList.length * config.toolTipLineHeight;
+    let toolTipHeight = 2 * config.toolTipPadding + lineNu * config.toolTipLineHeight;
 
     // if beyond the right border
     if (offset.x - Math.abs(opts._scrollDistance_) + arrowWidth + toolTipWidth > opts.width) {
@@ -132,16 +140,16 @@ export function drawToolTip(textList, offsetP, opts, config, context) {
     context.beginPath();
     context.setFontSize(config.fontSize);
     context.setFillStyle('#ffffff');
-    textList.forEach((item, index) => {
+    formulaTextWidths.forEach((item, index) => {
         let startX = tooltipPosition.x + arrowWidth + 2 * config.toolTipPadding + legendWidth + legendMarginRight;
         if (isOverRightBorder) {
-            startX = tooltipPosition.x - toolTipWidth - arrowWidth + 2 * config.toolTipPadding + +legendWidth + legendMarginRight;
+            startX = tooltipPosition.x - toolTipWidth - arrowWidth + 2 * config.toolTipPadding + legendWidth + legendMarginRight;
         }
         let startY = tooltipPosition.y + (config.toolTipLineHeight - config.fontSize) / 2 + config.toolTipLineHeight * index + config.toolTipPadding - 1;
         // context.fillText(item.text, startX, startY + config.fontSize);
 
         // 支持公式的文本绘制，如 PM_2_._5
-        fillFormulaText(formulaTextWidths[index], startX, startY + config.fontSize, config.fontSize, context);
+        fillFormulaText(item, startX, startY + config.fontSize, config.fontSize, context);
     });
     context.stroke();
     context.closePath();

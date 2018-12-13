@@ -247,7 +247,7 @@ export function measureText(text, fontSize, context) {
 const FORMULA_TEXT_WIDTH_CACHE = {};
 
 /**
- * 测量带下标的字符串
+ * 测量带上下标的字符串
  *
  * @param text
  * @param fontSize
@@ -255,40 +255,75 @@ const FORMULA_TEXT_WIDTH_CACHE = {};
  * @returns {*}
  */
 export function measureFormulaText(text, fontSize, context) {
+    if (!text) {
+        return [];
+    }
     if (FORMULA_TEXT_WIDTH_CACHE[text]) {
         return FORMULA_TEXT_WIDTH_CACHE[text];
     }
 
-    context.setFontSize(fontSize);
-    let texts = text.split('_');
-    let sizes = [];
-    texts.forEach((t, i) => {
-        if (i === 0) {
-            sizes.push({
-                text: t,
-                width: context.measureText(t).width
-            });
-            return;
+    let textInfo = [{
+        text: '',
+        width: 0,
+        type: null
+    }];
+    // 遍历字符串，根据正常/上标/下标类型进行切割分组
+    // 如： PM_1_0 ug/m^3 -> ['PM', '10', ' ug/m', '3']
+    for (let i = 0; i < text.length; i++) {
+        let ch = text.charAt(i);
+        let ti = textInfo[textInfo.length - 1];
+        switch (ch) {
+            case '_':
+                if (ti.type !== 'sub') {
+                    textInfo.push({
+                        text: '',
+                        width: 0,
+                        type: 'sub'
+                    })
+                }
+                ch = text.charAt(++i);
+                break;
+            case '^':
+                if (ti.type !== 'sup') {
+                    textInfo.push({
+                        text: '',
+                        width: 0,
+                        type: 'sup'
+                    })
+                }
+                ch = text.charAt(++i);
+                break;
+            default:
+                if (ti.type) {
+                    textInfo.push({
+                        text: '',
+                        width: 0,
+                        type: null
+                    })
+                }
         }
-        // 下标字体大小
-        context.setFontSize(fontSize * 2 / 3);
-        sizes.push({
-            text: t.substr(0, 1),
-            width: context.measureText(t.substr(0, 1)).width,
-            type: 'sub'
-        });
+        ti = textInfo[textInfo.length - 1];
+        ti.text += ch;
+    }
 
-        if (t.length === 1) {
-            return;
+    // 字符串按类型分组后测量每组宽度
+    textInfo.forEach(info => {
+        switch (info.type) {
+            case 'sub':
+                context.setFontSize(fontSize * 2 / 3);
+                context.setTextBaseline('middle');
+                break;
+            case 'sup':
+                context.setFontSize(fontSize * 2 / 3);
+                context.setTextBaseline('bottom');
+                break;
+            default:
+                context.setFontSize(fontSize);
+                context.setTextBaseline('normal');
         }
-
-        context.setFontSize(fontSize);
-        sizes.push({
-            text: t.substr(1),
-            width: context.measureText(t.substr(1)).width
-        });
+        info.width = context.measureText(info.text).width;
     });
 
-    FORMULA_TEXT_WIDTH_CACHE[text] = sizes;
-    return sizes;
+    FORMULA_TEXT_WIDTH_CACHE[text] = textInfo;
+    return textInfo;
 }

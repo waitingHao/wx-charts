@@ -272,7 +272,11 @@ export function calCategoriesData(categories, opts, config) {
     let eachSpacing = getXAxisPoints(categories, opts, config).eachSpacing;
 
     // get max length of categories text
-    let categoriesTextLenth = categories.map((item) => {
+    let categoriesTextLenth = categories.map((cat) => {
+        let item = cat;
+        if (opts.xAxis.axisLabel && opts.xAxis.axisLabel.formatter) {
+            item = opts.xAxis.axisLabel.formatter(cat);
+        }
         // 添加带换行符的宽度判断逻辑
         let textWidth = item.toString().split('\n').reduce(function (sum, single) {
             return Math.max(sum, measureText(single));

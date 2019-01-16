@@ -59,6 +59,8 @@ opts.xAxis.name String 坐标轴名称。
 opts.xAxis.nameTextStyle Object 坐标轴名称的文字样式。
 opts.xAxis.nameTextStyle.color String 坐标轴名称的颜色。
 opts.xAxis.nameTextStyle.fontSize Number 坐标轴名称文字的字体大小。
+opts.xAxis.axisLabel.interval Number 刻度标签间隔
+opts.xAxis.axisLabel.formatter Function 刻度标签的内容格式器
 
 opts.yAxis Object Y轴配置
 

@@ -347,8 +347,16 @@ export function drawXAxis(categories, opts, config, context) {
     context.closePath();
     context.stroke();
 
-    let cats = categories.map((item, index) => {
-        return index % ratio !== 0 ? '' : item;
+    let cats = categories.map((cat, index) => {
+        if (index % ratio !== 0) {
+            return '';
+        }
+        let item = cat;
+        if (opts.xAxis.axisLabel && typeof opts.xAxis.axisLabel.formatter === 'function') {
+            item = opts.xAxis.axisLabel.formatter.call(this, cat);
+        }
+
+        return item;
     });
 
     // x坐标标签

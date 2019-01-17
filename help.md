@@ -7,7 +7,7 @@ opts.width Number required canvas宽度，单位为px
 
 opts.height Number required canvas高度，单位为px
 
-opts.background String canvas背景颜色（如果页面背景颜色不是白色请设置为页面的背景颜色，默认#ffffff）
+opts.background String canvas背景颜色（如果页面背景颜色不是白色请设置为页面的背景颜色，默认透明）
 
 opts.enableScroll Boolean 是否开启图表可拖拽滚动 默认false 支持line, area图表类型(需配合绑定scrollStart, scroll, scrollEnd方法)
 

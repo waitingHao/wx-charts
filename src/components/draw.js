@@ -620,7 +620,7 @@ export function drawYAxis(series, opts, config, context) {
 
 
     // set YAxis background
-    context.setFillStyle(opts.background || '#ffffff');
+    context.setFillStyle(opts.background || 'rgba(0,0,0,0)');
     if (opts._scrollDistance_ < 0) {
         context.fillRect(0, 0, startX, startY + config.xAxisHeight + 5);
     }

@@ -536,7 +536,7 @@ export function getDataPoints(data, ranges, xAxisPoints, eachSpacing, opts, conf
         } else {
             value = item;
         }
-        if (!value) {
+        if (!value && isNaN(value)) {
             points.push(null);
         } else {        
             let point = {};

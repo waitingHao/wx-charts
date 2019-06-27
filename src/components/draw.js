@@ -188,6 +188,11 @@ export function drawLineArea(series, opts, config, calPoints, xAxisPoints, conte
     // TODO 封装
     let startY = calStartY(config, opts);
     calPoints.forEach(function (cp, index) {
+        // 无数据跳过
+        if (!cp || cp.length === 0) {
+            return;
+        }
+
         if (!series[index].areaStyle || !series[index].areaStyle.color) {
             return;
         }

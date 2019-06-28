@@ -163,7 +163,7 @@ dateItem.areaStyle Object 区域填充样式。
 dateItem.areaStyle.color String 填充的颜色。
 
 tooltip.background String 背景色
-tooltip.position Function 提示框浮层的位置，默认不设置时位置会跟随鼠标的位置。
+tooltip.position(item, cat, index) Function 提示框浮层的位置，默认不设置时位置会跟随鼠标的位置。
 tooltip.format Function 格式化tooltip，返回null时隐藏。
 tooltip.axisPointer Object 坐标轴指示器
 tooltip.axisPointer.type String 指示器类型: 'line' 直线指示器
@@ -171,3 +171,4 @@ tooltip.axisPointer.lineStyle Object axisPointer.type 为 'line' 时有效。
 tooltip.axisPointer.lineStyle.color String 线的颜色。
 tooltip.legendStyle Object 
 tooltip.legendStyle.show Boolean 
+tooltip.textStyle.color tooltip文字颜色

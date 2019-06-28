@@ -137,9 +137,13 @@ export function drawToolTip(textList, offsetP, opts, config, context) {
     }
 
     // draw text list
+    let textColor = '#ffffff';
+    if (opts.tooltip.option && opts.tooltip.option.textStyle && opts.tooltip.option.textStyle.color) {
+        textColor = opts.tooltip.option.textStyle.color;
+    }
     context.beginPath();
     context.setFontSize(config.fontSize);
-    context.setFillStyle('#ffffff');
+    context.setFillStyle(textColor);
     formulaTextWidths.forEach((item, index) => {
         let startX = tooltipPosition.x + arrowWidth + 2 * config.toolTipPadding + legendWidth + legendMarginRight;
         if (isOverRightBorder) {

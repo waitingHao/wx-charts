@@ -74,7 +74,7 @@ export function getToolTipData(seriesData, calPoints, index, categories, option)
     }
     let textList = seriesData.map(item => {
         return {
-            text: opts.format ? opts.format(item, categories[index]) : `${item.name}: ${item.data}`,
+            text: opts.format ? opts.format(item, categories[index], index) : `${item.name}: ${item.data}`,
             color: item.color
         }
     });
